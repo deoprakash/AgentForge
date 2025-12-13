@@ -3,6 +3,7 @@ from agents.research import ResearchAgent
 from agents.writer import WriterAgent
 from agents.developer import DeveloperAgent
 from agents.automation import AutomationAgent
+from utils import format_email_content
 
 class Orchestrator:
     def __init__(self, memory):
@@ -14,7 +15,13 @@ class Orchestrator:
         self.memory = memory
 
     async def run(self, goal, email_target):
+    # 🔹 Create session
+        session_id = await self.memory.create_session(goal, email_target)
+
+        # 🔹 CEO plan
         plan = await self.ceo.create_plan(goal)
+        await self.memory.save_plan(session_id, plan)
+
         results = []
 
         for task in plan.get("tasks", []):
@@ -22,15 +29,40 @@ class Orchestrator:
             desc = task.get("description")
 
             if agent == "Research":
-                results.append(await self.research.run_research(desc))
-            
+                research = await self.research.run_research(desc)
+                await self.memory.save_research(session_id, research)
+                results.append(research)
+
             elif agent == "Writer":
-                results.append(await self.writer.write_document(desc))
+                past_research = await self.memory.get_research(session_id)
+                brief = f"{desc}\n\nUse this research:\n{past_research}"
+                doc = await self.writer.write_document(brief)
+                await self.memory.save_document(session_id, doc)
+                results.append(doc)
 
             elif agent == "Developer":
-                results.append(await self.developer.generate_diagram(desc))
+                dev_result = await self.developer.generate_diagram(desc)
+                results.append(dev_result)
 
-            elif agent == "Automation":
-                results.append(await self.automation.send_output(email_target, "Task Done", desc))
-        
-        return {"plan": plan, "results": results}
+        # Send ONE final email with the completed work
+        latest_doc = await self.memory.get_latest_document(session_id)
+        if latest_doc:
+            email_content = format_email_content(latest_doc.get("document", "Work completed"))
+            sent = await self.automation.send_output(
+                email_target,
+                f"Final Draft: {plan.get('goal', 'Your Request')}",
+                email_content
+            )
+            await self.memory.save_actions(session_id, sent)
+            results.append({
+                "email_sent": True,
+                "formatted_output": email_content,
+                "details": sent
+            })
+
+        return {
+            "session_id": session_id,
+            "plan": plan,
+            "results": results
+        }
+

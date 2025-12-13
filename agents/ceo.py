@@ -4,15 +4,16 @@ from agents.base import BaseAgent
 
 class CEOAgent(BaseAgent):
     async def create_plan(self, goal:str):
-        prompt = f"""Create a JSON plan with this exact structure. IMPORTANT: assigned_agent must be EXACTLY one of: "Research", "Writer", "Developer", or "Automation". Do NOT combine agent names.
+        prompt = f"""Create a JSON plan with this exact structure. IMPORTANT: assigned_agent must be EXACTLY one of: "Research", "Writer", or "Developer". Do NOT include Automation tasks.
 
 {{"goal": "...", "tasks": [{{"assigned_agent": "Research", "description": "..."}}]}}
 
 Valid agents:
 - Research: For market research and information gathering
 - Writer: For writing documents and content
-- Developer: For creating diagrams and technical artifacts  
-- Automation: For sending emails and automating processes
+- Developer: For creating diagrams and technical artifacts
+
+Do NOT create multiple similar tasks. Create a focused plan that delivers one final output.
 
 Goal: {goal}"""
         raw = await self.think(prompt)
