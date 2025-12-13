@@ -1,0 +1,7 @@
+[project]
+name = "agenticai"
+version = "0.1.0"
+description = "Agentic AI project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
