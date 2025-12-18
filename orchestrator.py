@@ -4,6 +4,7 @@ from agents.writer import WriterAgent
 from agents.developer import DeveloperAgent
 from agents.automation import AutomationAgent
 from utils import format_email_content
+import asyncio
 
 class Orchestrator:
     def __init__(self, memory):
@@ -24,25 +25,72 @@ class Orchestrator:
 
         results = []
 
+        # split task by agent
+        research_tasks = []
+        developer_tasks = []
+        writer_tasks = []
+
         for task in plan.get("tasks", []):
             agent = task.get("assigned_agent")
             desc = task.get("description")
 
             if agent == "Research":
-                research = await self.research.run_research(desc)
-                await self.memory.save_research(session_id, research)
-                results.append(research)
-
-            elif agent == "Writer":
-                past_research = await self.memory.get_research(session_id)
-                brief = f"{desc}\n\nUse this research:\n{past_research}"
-                doc = await self.writer.write_document(brief)
-                await self.memory.save_document(session_id, doc)
-                results.append(doc)
+                # research = await self.research.run_research(desc)
+                # await self.memory.save_research(session_id, research)
+                research_tasks.append(desc)
 
             elif agent == "Developer":
+                # dev_result = await self.developer.generate_diagram(desc)
+                developer_tasks.append(desc)
+            
+            elif agent == "Writer":
+                writer_tasks.append(desc)
+
+
+        # -----------------------------
+        # Parallel execution
+        # -----------------------------
+
+        async def run_research():
+            output = []
+            for desc in research_tasks:
+                research = await self.research.run_research(desc)
+                await self.memory.save_research(session_id, research)
+                output.append(research)
+            return output
+
+        async def run_developer():
+            output = []
+            for desc in developer_tasks:
                 dev_result = await self.developer.generate_diagram(desc)
-                results.append(dev_result)
+                output.append(dev_result)
+            return output
+        
+        research_results, dev_results = await asyncio.gather(
+            run_research(),
+            run_developer()
+        )
+
+        results.extend(research_results)
+        results.extend(dev_results)
+
+        # ----------------------------------
+        #  Writer runs After parallel task
+        # ----------------------------------
+
+        if writer_tasks:
+            # Combine writer tasks with gathered research and dev outputs
+            brief = "\n\n".join([
+                "\n".join(writer_tasks),
+                f"Use this research:\n{research_results}",
+                f"Use these outputs:\n{dev_results}"
+            ])
+
+            doc = await self.writer.write_document(brief)
+            await self.memory.save_document(session_id, doc)
+            results.append(doc)
+
+
 
         # Send ONE final email with the completed work
         latest_doc = await self.memory.get_latest_document(session_id)
