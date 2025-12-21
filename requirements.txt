@@ -8,3 +8,4 @@ groq==0.5.0
 pymongo==4.7.3
 motor==3.5.1
 aiofiles==23.2.1
+google-genai

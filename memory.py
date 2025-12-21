@@ -49,6 +49,17 @@ class MemoryStore:
                 self._memory['plans'] = []
             self._memory['plans'].append(plan)
 
+    async def get_latest_plan(self, session_id: str) -> Optional[Dict]:
+        """Retrieve the latest plan for a session."""
+        if self.use_mongo:
+            return await self.db.plans.find_one(
+                {"session_id": session_id},
+                sort=[("created_at", -1)]
+            )
+        else:
+            plans = [p for p in self._memory.get('plans', []) if p.get('session_id') == session_id]
+            return plans[-1] if plans else None
+
 # ----------------------- Research -------------------------
 
     async def save_research(self, session_id:str, research: Dict):
@@ -102,6 +113,10 @@ class MemoryStore:
             if 'actions' not in self._memory:
                 self._memory['actions'] = []
             self._memory['actions'].append(action)
+    
+    # Alias for backwards compatibility
+    async def save_action(self, session_id:str, action:Dict):
+        return await self.save_actions(session_id, action)
 
 
         

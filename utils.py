@@ -21,28 +21,70 @@ def serialize_doc(doc):
     return doc
 
 
-def format_email_content(text):
-    """Format email content in simple structure: Hello, content, Regards, Name, phone"""
+def format_email_content(text, confidence=None):
+    """
+    Format email content in a clean professional structure:
+    - Removes headers, markdown, placeholders
+    - Normalizes spacing
+    - Optionally appends confidence & hallucination report
+    """
+
     if not text:
         return "No content available"
-    
-    # Remove Subject, From, To headers
-    text = re.sub(r'^(Subject:|From:|To:|Date:|Time:).*$', '', text, flags=re.MULTILINE)
-    
-    # Remove [placeholder] patterns like [Recipient's Name], [Insert Date]
+
+    # -----------------------------
+    # Remove common email headers
+    # -----------------------------
+    text = re.sub(
+        r'^(Subject:|From:|To:|Date:|Time:).*$', 
+        '', 
+        text, 
+        flags=re.MULTILINE
+    )
+
+    # -----------------------------
+    # Remove placeholders like [Name], [Date]
+    # -----------------------------
     text = re.sub(r'\[.*?\]', '', text)
-    
+
+    # -----------------------------
     # Remove markdown formatting
+    # -----------------------------
     text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
     text = re.sub(r'\*(.+?)\*', r'\1', text)
     text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
     text = re.sub(r'\[(.+?)\]\(.+?\)', r'\1', text)
-    
-    # Clean up extra whitespace and blank lines
+
+    # -----------------------------
+    # Normalize whitespace
+    # -----------------------------
     text = re.sub(r'\n{3,}', '\n\n', text)
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     text = '\n'.join(lines)
-    
+
+    # -----------------------------
+    # Append Confidence Report (if available)
+    # -----------------------------
+    if confidence:
+        confidence_block = [
+            "",
+            "----------------------------------------",
+            "AI Confidence & Reliability Report",
+            "----------------------------------------",
+            f"Confidence Score     : {confidence.get('confidence_score', 'N/A')} / 100",
+            f"Hallucination Risk   : {confidence.get('hallucination_risk', 'N/A')}",
+        ]
+
+        issues = confidence.get("issues", [])
+        if issues:
+            confidence_block.append("Identified Issues:")
+            for i, issue in enumerate(issues, start=1):
+                confidence_block.append(f"  {i}. {issue}")
+        else:
+            confidence_block.append("Identified Issues: None")
+
+        text += "\n" + "\n".join(confidence_block)
+
     return text
 
 
