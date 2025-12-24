@@ -175,6 +175,7 @@ from agents.research import ResearchAgent
 from agents.writer import WriterAgent
 from agents.developer import DeveloperAgent
 from agents.automation import AutomationAgent
+from agents.confidence import ConfidenceAgent
 
 from utils import format_email_content
 
@@ -197,6 +198,7 @@ class Orchestrator:
         self.writer = WriterAgent("Writer", memory)
         self.developer = DeveloperAgent("Developer", memory)
         self.automation = AutomationAgent("Automation", memory)
+        self.confidence = ConfidenceAgent("Confidence", memory)
         self.memory = memory
 
     async def run(self, goal: str, email_target: str | None = None):
@@ -238,7 +240,17 @@ class Orchestrator:
         final_doc = await self.writer.write_document(brief)
         await self.memory.save_document(session_id, final_doc)
 
-        # 4) Optional: send ONE email with the final draft only.
+        # 4) Calculate and store confidence score (no rewrite/regeneration)
+        confidence_result = None
+        try:
+            confidence_result = await self.confidence.evaluate_and_store(
+                session_id,
+                (final_doc or {}).get("document", ""),
+            )
+        except Exception:
+            confidence_result = None
+
+        # 5) Optional: send ONE email with the final draft only.
         email_result = None
         if email_target:
             try:
@@ -275,6 +287,7 @@ class Orchestrator:
                 "writer": final_doc,
             },
             "final": final_doc,
+            "confidence": confidence_result,
             "email": {
                 "requested": bool(email_target),
                 "to": email_target,
