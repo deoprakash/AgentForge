@@ -5,6 +5,6 @@ class BaseAgent:
         self.name = name
         self.memory = memory
 
-    async def think(self, prompt:str):
+    async def think(self, prompt: str, purpose: str = "generation"):
         system = f"you are the {self.name} agent."
-        return await call_llm(prompt, system)
+        return await call_llm(prompt, system, purpose=purpose)

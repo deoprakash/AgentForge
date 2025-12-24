@@ -21,7 +21,7 @@ class MemoryStore:
 
 # -------------------- Session ---------------
 
-    async def create_session(self, goal:str, email:str):
+    async def create_session(self, goal: str, email: str | None = None):
         session = {
             "goal": goal,
             "email": email,

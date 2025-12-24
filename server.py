@@ -61,12 +61,24 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, model_validator
 from orchestrator import Orchestrator
 from memory import MemoryStore
-from config import APP_HOST, APP_PORT, MONGO_URI
+from config import APP_HOST, APP_PORT, MONGO_URI, LLM_PROVIDER
 from utils import serialize_doc, parse_command
 
 app = FastAPI()
 memory = MemoryStore(MONGO_URI)
 orchestrator = Orchestrator(memory)
+
+
+# ===============================
+# Health
+# ===============================
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "ok",
+        "llm_provider": LLM_PROVIDER,
+    }
 
 
 # ===============================
@@ -82,9 +94,9 @@ class RunRequest(BaseModel):
     def ensure_input(self):
         if self.command:
             return self
-        if self.goal and self.email:
+        if self.goal:
             return self
-        raise ValueError("Provide either 'command' or both 'goal' and 'email'.")
+        raise ValueError("Provide either 'command' or 'goal'.")
 
 
 class RunLegacyRequest(BaseModel):
@@ -106,18 +118,33 @@ async def run(req: RunRequest):
     try:
         if req.command:
             parsed = parse_command(req.command)
-            goal, email = parsed["goal"], parsed["email"]
+            goal, email = parsed.get("goal"), parsed.get("email")
         else:
             goal, email = req.goal, req.email
 
-        if not goal or not email:
-            raise ValueError("Both 'goal' and 'email' are required when no command is provided.")
+        if not goal:
+            raise ValueError("'goal' is required when no command is provided.")
 
         result = await orchestrator.run(goal, email)
+
+        # If the run returned an LLM sentinel status, map to a proper HTTP code.
+        if isinstance(result, dict):
+            message = str(result.get("message", ""))
+            if "__LLM_RATE_LIMITED__" in message:
+                return JSONResponse(status_code=429, content=serialize_doc(result))
+
         return JSONResponse(content=serialize_doc(result))
 
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
+
+    except Exception as e:
+        # Avoid crashing the server on upstream LLM/network errors.
+        text = str(e)
+        status = 500
+        if "429" in text or "Too Many Requests" in text:
+            status = 429
+        return JSONResponse(status_code=status, content={"error": "Request failed", "detail": text})
 
 
 @app.post("/run/legacy")

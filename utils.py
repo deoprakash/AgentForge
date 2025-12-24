@@ -99,17 +99,18 @@ def parse_command(command: str):
     # Email regex pattern
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     
-    # Extract email
+    # Extract email (optional)
     email_match = re.search(email_pattern, command)
-    if not email_match:
-        raise ValueError("No valid email found in command")
+    email = email_match.group(0) if email_match else None
     
-    email = email_match.group(0)
-    
-    # Remove email and "send to"/"and send to" from command to get goal
-    goal = re.sub(rf'\s+(and\s+)?send\s+to\s+{re.escape(email)}', '', command, flags=re.IGNORECASE)
-    goal = re.sub(rf'\s+(and\s+)?send\s+to\s+{re.escape(email)}', '', goal, flags=re.IGNORECASE)
-    goal = goal.strip()
+    # If there's an email, remove it and "send to"/"and send to" to get the goal.
+    # If there's no email, treat the full command as the goal.
+    if email:
+        goal = re.sub(rf'\s+(and\s+)?send\s+to\s+{re.escape(email)}', '', command, flags=re.IGNORECASE)
+        goal = re.sub(rf'\s+(and\s+)?send\s+to\s+{re.escape(email)}', '', goal, flags=re.IGNORECASE)
+        goal = goal.strip()
+    else:
+        goal = command.strip()
     
     if not goal:
         raise ValueError("No goal/action found in command")

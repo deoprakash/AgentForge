@@ -27,7 +27,11 @@ class ReviewerAgent(BaseAgent):
         ----------------
         """
 
-        response = await self.think(prompt)
+        response = await self.think(prompt, purpose="validation")
+
+        # Propagate LLM sentinels so the orchestrator can short-circuit.
+        if "__LLM_" in str(response):
+            return {"status": "REVISE", "feedback": response}
 
         if "APPROVED" in response.upper():
             return {"status": "APPROVED", "feedback": None}
