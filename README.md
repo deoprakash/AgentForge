@@ -101,6 +101,17 @@ AgenticAI/
 
 ---
 
+## � Project Metrics
+
+- **Lines of Code:** ~2,000+ (Python)
+- **Agents Implemented:** 7 specialized agents
+- **External Integrations:** 4 tools (Gmail, Calendar, Search, File)
+- **LLM Providers Supported:** 3 (Groq, Gemini, Ollama)
+- **Async Operations:** 100% async-first design
+- **Database Operations:** Fully async with Motor driver
+
+---
+
 ## 🚀 Setup & Installation
 
 ### Prerequisites
@@ -131,7 +142,53 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
----🏃 Running the Application
+---
+
+## ⚙️ Configuration
+
+Create a `.env` file in the project root with the following variables:
+
+```bash
+# Server Configuration
+APP_HOST=0.0.0.0
+APP_PORT=8000
+
+# LLM Provider Selection (groq | gemini | ollama)
+LLM_PROVIDER=groq
+LLM_GENERATION_PROVIDER=groq      # Optional: override for generation tasks
+LLM_VALIDATION_PROVIDER=gemini    # Optional: override for validation
+
+# Groq API Configuration
+GROQ_API_KEY=gsk_...
+GROQ_API_KEY_2=gsk_...            # Optional: failover key
+GROQ_API_KEYS=key1,key2,key3      # Optional: comma-separated for rotation
+GROQ_KEY_STRATEGY=failover_on_429 # Strategy: single | failover_on_429
+GROQ_MIN_INTERVAL_SECONDS=1.5     # Rate limiting spacing
+
+# Google Gemini Configuration
+GEMINI_API_KEY=AIza...
+GEMINI_API_KEY_2=AIza...          # Optional: failover key
+GEMINI_API_KEYS=key1,key2         # Optional: comma-separated
+
+# Ollama Configuration (for local deployment)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama2
+
+# Database
+MONGO_URI=mongodb://localhost:27017/AgentForge
+# Or MongoDB Atlas: mongodb+srv://user:pass@cluster.mongodb.net/
+
+# Email Integration
+EMAIL_ENABLED=true
+ADMIN_EMAIL=admin@example.com
+FROM_EMAIL=no-reply@example.com
+```
+
+**Security Note:** Never commit `.env` to version control. Add it to `.gitignore`.
+
+---
+
+## 🏃 Running the Application
 
 ### Start the API Server
 ```bash
@@ -157,7 +214,55 @@ Or using the structured format:
 ```bash
 curl -X POST http://localhost:8000/run \
   -H "Content-Type: application/json" \
-  -🎓 Technical Skills Demonstrated
+  -d '{
+    "goal": "Research latest AI agent frameworks",
+    "email": "user@example.com"
+  }'
+```
+
+---
+
+## 🔄 System Workflow
+
+**Example Task:** *"Research autonomous AI agents and create a technical report"*
+
+### Execution Flow:
+
+1. **API Layer** (`server.py`)
+   - Receives HTTP POST request
+   - Validates input via Pydantic models
+   - Initiates orchestrator
+
+2. **Orchestrator** (`orchestrator.py`)
+   - Creates session in memory store
+   - Delegates to CEO agent for planning
+
+3. **CEO Agent** (`agents/ceo.py`)
+   - Analyzes goal and creates structured task plan
+   - Assigns tasks to specialized agents (Research → Writer → Reviewer)
+
+4. **Research Agent** (`agents/research.py`)
+   - Uses `search_tool.py` to gather information
+   - Saves findings to MongoDB via memory layer
+
+5. **Writer Agent** (`agents/writer.py`)
+   - Retrieves research from memory
+   - Generates formatted document
+   - Persists output to database
+
+6. **Automation Agent** (`agents/automation.py`)
+   - Uses `gmail_tool.py` to send results
+   - Optionally schedules follow-ups via `calendar_tool.py`
+
+7. **Memory Layer** (`memory.py`)
+   - Stores session context, plans, research, documents
+   - Enables retrieval for multi-turn interactions
+
+**Result:** Structured JSON response with document content and execution metadata
+
+---
+
+## 🎓 Technical Skills Demonstrated
 
 This project showcases proficiency in:
 
@@ -218,31 +323,11 @@ Extend `llm_client.py` with new provider implementations following the existing 
 
 ## 🛣️ Future Enhancements
 
-**In Progress:**
 - [ ] Vector database integration (Pinecone/Weaviate) for semantic memory
-- [ ] Streaming responses via WebSocket
-- [ ] Agent performance metrics and observability
-- [ ] Docker containerization with compose file
+- [ ] React-based admin dashboard with real-time monitoring
+- [ ] Docker containerization with docker-compose
 - [ ] Comprehensive test suite (pytest + pytest-asyncio)
-
-**Planned:**
-- [ ] React-based admin dashboard
-- [ ] Message queue integration (Redis/RabbitMQ)
-- [ ] Multi-tenancy support
-- [ ] Kubernetes deployment manifests
-- [ ] CI/CD pipeline (GitHub Actions)o gather information
-   - Saves findings to MongoDB via memory layer
-
-5. **Writer Agent** (`agents/writer.py`)
-   - Retrieves research from memory
-   📊 Project Metrics
-
-- **Lines of Code:** ~2,000+ (Python)
-- **Agents Implemented:** 7 specialized agents
-- **External Integrations:** 4 tools (Gmail, Calendar, Search, File)
-- **LLM Providers Supported:** 3 (Groq, Gemini, Ollama)
-- **Async Operations:** 100% async-first design
-- **Database Operations:** Fully async with Motor driver
+- [ ] CI/CD pipeline with GitHub Actions
 
 ---
 
@@ -297,100 +382,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 **⭐ Star this repository if you find it useful for learning or reference!**
-MONGO_URI=mongodb://localhost:27017/AgentForge
-
-Or MongoDB Atlas: mongodb+srv://user:pass@cluster.mongodb.net/
-
-## Email Integration
-```
-EMAIL_ENABLED=true
-ADMIN_EMAIL=admin@example.com
-FROM_EMAIL=no-reply@example.com
-```
-
-**Security Note:** Never commit `.env` to version control. Add it to `.gitignore`.
-
----
-
-## Running the Project
-
-Start the agent server using:
-
-python server.py
-
-The server accepts tasks, routes them to appropriate agents, executes tools, manages memory, and returns structured outputs.
-
----
-
-## Example Workflow
-
-Input:
-"Research recent trends in autonomous AI agents and generate a summary."
-
-Execution Flow:
-1. Planner agent decomposes the task
-2. Research agent gathers relevant information
-3. Writer agent generates structured output
-4. Memory module stores useful context
-
-Output:
-A concise, well-structured response generated autonomously by agents.
-
----
-
-## Use Cases
-
-- Autonomous research assistants
-- Document and report generation
-- AI workflow automation
-- Agent-based experimentation
-- Learning and prototyping agentic AI systems
-
----
-
-## Extending AgentForge
-
-You can easily extend the framework by:
-- Adding new agents in the `agents/` directory
-- Creating custom tools inside `tools/`
-- Modifying orchestration logic
-- Integrating vector databases or external APIs
-
-The framework is intentionally lightweight to encourage experimentation.
-
----
-
-## Roadmap
-
-- Web-based UI dashboard
-- Vector database integration
-- Asynchronous agent execution
-- Agent performance monitoring
-- CI/CD pipeline integration
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-Steps:
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Open a pull request
-
----
-
-## Author
-
-### Deo Prakash  
-GitHub: https://github.com/deoprakash 
-
-LinkedIN: https://www.linkedin.com/in/deo-prakash-152265225/
-
----
-
-## License
-
-This project is licensed under the MIT License.
