@@ -101,7 +101,7 @@ AgenticAI/
 
 ---
 
-## � Project Metrics
+## 📊 Project Metrics
 
 - **Lines of Code:** ~2,000+ (Python)
 - **Agents Implemented:** 7 specialized agents
