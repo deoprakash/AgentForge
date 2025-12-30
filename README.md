@@ -298,9 +298,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **⭐ Star this repository if you find it useful for learning or reference!**
 MONGO_URI=mongodb://localhost:27017/AgentForge
-# Or MongoDB Atlas: mongodb+srv://user:pass@cluster.mongodb.net/
 
-# Email Integration
+Or MongoDB Atlas: mongodb+srv://user:pass@cluster.mongodb.net/
+
+## Email Integration
+```
 EMAIL_ENABLED=true
 ADMIN_EMAIL=admin@example.com
 FROM_EMAIL=no-reply@example.com
