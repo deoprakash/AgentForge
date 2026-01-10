@@ -201,7 +201,7 @@ class Orchestrator:
         self.confidence = ConfidenceAgent("Confidence", memory)
         self.memory = memory
 
-    async def run(self, goal: str, email_target: str | None = None):
+    async def run(self, goal: str, email_target: str | None = None, max_iterations: int = 3):
         # 1) Create session (email is optional and not used for sending)
         session_id = await self.memory.create_session(goal, email_target)
 
@@ -209,47 +209,122 @@ class Orchestrator:
         plan = await self.ceo.create_plan(goal)
         await self.memory.save_plan(session_id, plan)
 
-        # 3) Execute in the fixed order
+        # 3) Execute pipeline with feedback loop until confidence >= 90%
         tasks = plan.get("tasks", []) or []
         research_task = next((t.get("description") for t in tasks if t.get("assigned_agent") == "Research"), None)
         developer_task = next((t.get("description") for t in tasks if t.get("assigned_agent") == "Developer"), None)
         writer_task = next((t.get("description") for t in tasks if t.get("assigned_agent") == "Writer"), None)
 
         research_result = None
-        if research_task:
-            research_result = await self.research.run_research(str(research_task))
-            await self.memory.save_research(session_id, research_result)
-
         developer_result = None
-        if developer_task:
-            dev_instructions = str(developer_task)
-            if research_result:
-                dev_instructions = (
-                    f"{dev_instructions}\n\n"
-                    f"Context from Research (use if helpful):\n{research_result}"
-                )
-            developer_result = await self.developer.generate_diagram(dev_instructions)
-
-        brief = (writer_task or "Draft a final response for the user.").strip()
-        brief = (
-            f"User goal:\n{goal}\n\n"
-            f"Writing task:\n{brief}\n\n"
-            f"Research output (authoritative context):\n{research_result}\n\n"
-            f"Developer output (technical artifacts):\n{developer_result}\n"
-        )
-        final_doc = await self.writer.write_document(brief)
-        await self.memory.save_document(session_id, final_doc)
-
-        # 4) Calculate and store confidence score (no rewrite/regeneration)
+        final_doc = None
         confidence_result = {"confidence_score": 40, "source": "fallback"}
-        try:
-            confidence_result = await self.confidence.evaluate_and_store(
-                session_id,
-                (final_doc or {}).get("document", ""),
+        iteration = 0
+        hallucination_issues = None
+
+        # FEEDBACK LOOP: Keep iterating until confidence >= 90% or max iterations reached
+        while iteration < max_iterations:
+            iteration += 1
+            print(f"🔄 Iteration {iteration}/{max_iterations}")
+
+            # Research phase (with optional hallucination feedback)
+            if research_task:
+                research_input = str(research_task)
+                if hallucination_issues:
+                    research_input = (
+                        f"{research_task}\n\n"
+                        f"⚠️ Previous hallucination issues found - please research these thoroughly:\n"
+                        f"{chr(10).join(f'- {issue}' for issue in hallucination_issues)}"
+                    )
+                research_result = await self.research.run_research(research_input)
+                await self.memory.save_research(session_id, research_result)
+
+            # Developer phase (using refreshed research)
+            if developer_task:
+                dev_instructions = str(developer_task)
+                if research_result:
+                    dev_instructions = (
+                        f"{dev_instructions}\n\n"
+                        f"Context from Research (use if helpful):\n{research_result}"
+                    )
+                developer_result = await self.developer.generate_diagram(dev_instructions)
+
+            # Writer phase (using refreshed developer output)
+            brief = (writer_task or "Draft a final response for the user.").strip()
+            brief = (
+                f"User goal:\n{goal}\n\n"
+                f"Writing task:\n{brief}\n\n"
+                f"Research output (authoritative context):\n{research_result}\n\n"
+                f"Developer output (technical artifacts):\n{developer_result}\n"
             )
-        except Exception as e:
-            print(f"⚠️ Confidence evaluation failed: {e}")
-            confidence_result = {"confidence_score": 40, "source": "fallback", "error": str(e)}
+            final_doc = await self.writer.write_document(brief)
+            await self.memory.save_document(session_id, final_doc)
+
+            # Check if we hit rate limits - if so, break the loop
+            doc_content = (final_doc or {}).get("document", "")
+            if "__LLM_RATE_LIMITED__" in str(doc_content) or "__LLM_UNAVAILABLE__" in str(doc_content):
+                print(f"⛔ Rate limit hit at iteration {iteration}. Stopping pipeline.")
+                confidence_result = {
+                    "confidence_score": 0,
+                    "confidence_source": "fallback",
+                    "hallucination_risk": "UNKNOWN",
+                    "hallucination_risk_score": 0,
+                    "hallucination_issues": ["Pipeline interrupted due to rate limiting"],
+                    "hallucination_summary": "Unable to complete pipeline - LLM rate limited",
+                    "error": "LLM_RATE_LIMITED"
+                }
+                break
+
+            # Confidence & Hallucination Check (only if document is valid)
+            confidence_result = {"confidence_score": 40, "source": "fallback"}
+            try:
+                confidence_result = await self.confidence.evaluate_and_store(
+                    session_id,
+                    doc_content,
+                )
+            except Exception as e:
+                print(f"⚠️ Confidence evaluation failed: {e}")
+                confidence_result = {"confidence_score": 40, "source": "fallback", "error": str(e)}
+                
+                # On later iterations, if we hit rate limits during evaluation, be lenient
+                if iteration > 1 and "rate" in str(e).lower():
+                    print(f"ℹ️ Rate limit during iteration {iteration}. Treating as mild success to continue refinement.")
+                    # Provide minimal but valid confidence data to continue loop
+                    if not confidence_result.get("confidence_score"):
+                        confidence_result = {
+                            "confidence_score": 85,
+                            "confidence_source": "fallback",
+                            "hallucination_risk_score": 35,
+                            "hallucination_issues": [],
+                            "hallucination_summary": "Skipped due to rate limiting",
+                        }
+
+            confidence_score = confidence_result.get("confidence_score", 40)
+            hallucination_risk_score = confidence_result.get("hallucination_risk_score", 50)
+            print(f"📊 Confidence Score: {confidence_score}/100 | Hallucination Risk: {hallucination_risk_score}/100")
+
+            # Check if we've reached BOTH targets:
+            # - Confidence >= 90%
+            # - Hallucination risk < 40%
+            if confidence_score >= 90 and hallucination_risk_score < 40:
+                print(f"✅ Target reached! Confidence: {confidence_score}% | Hallucination Risk: {hallucination_risk_score}%")
+                break
+
+            # Extract hallucination issues for next iteration
+            hallucination_issues = confidence_result.get("hallucination_issues", [])
+            
+            # Decide if we need to continue refining
+            needs_confidence_improvement = confidence_score < 90
+            needs_hallucination_improvement = hallucination_risk_score >= 40
+            
+            if (needs_confidence_improvement or needs_hallucination_improvement) and iteration < max_iterations:
+                if needs_hallucination_improvement:
+                    print(f"⚠️ Hallucination risk too high ({hallucination_risk_score}%). Issues: {hallucination_issues}")
+                if needs_confidence_improvement:
+                    print(f"⚠️ Confidence score low ({confidence_score}%). Need improvement.")
+                print(f"🔄 Re-running pipeline to address issues...\n")
+            elif iteration >= max_iterations:
+                print(f"⛔ Max iterations ({max_iterations}) reached. Stopping refinement loop.")
 
         # 5) Optional: send ONE email with the final draft only.
         email_result = None

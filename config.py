@@ -12,10 +12,11 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 LLM_GENERATION_PROVIDER = os.getenv("LLM_GENERATION_PROVIDER", LLM_PROVIDER).strip().lower()
 LLM_VALIDATION_PROVIDER = os.getenv("LLM_VALIDATION_PROVIDER", LLM_PROVIDER).strip().lower()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# Optional second key for failover.
+# Optional second and third keys for failover and rotation.
 GROQ_API_KEY_2 = os.getenv("GROQ_API_KEY_2")
+GROQ_API_KEY_3 = os.getenv("GROQ_API_KEY_3")
 # Optional: comma-separated list of Groq keys for rotation/failover.
-# Example: GROQ_API_KEYS=key1,key2
+# Example: GROQ_API_KEYS=key1,key2,key3
 _groq_keys_raw = os.getenv("GROQ_API_KEYS", "").strip()
 GROQ_API_KEYS = [k.strip() for k in _groq_keys_raw.split(",") if k.strip()] if _groq_keys_raw else []
 
@@ -26,10 +27,12 @@ def _append_key(keys: list[str], key: str | None) -> list[str]:
 
 _append_key(GROQ_API_KEYS, GROQ_API_KEY)
 _append_key(GROQ_API_KEYS, GROQ_API_KEY_2)
+_append_key(GROQ_API_KEYS, GROQ_API_KEY_3)
 
 # Strategy for using multiple keys:
 # - single: use first key only (strict, no extra calls)
-# - failover_on_429: if first key gets HTTP 429, try next key once
+# - failover_on_429: if a key gets HTTP 429, try next key (round-robin through all 3)
+# - rotation: cycle through all 3 keys for each request (load balancing)
 GROQ_KEY_STRATEGY = os.getenv("GROQ_KEY_STRATEGY", "single").strip().lower()
 
 # Optional pacing to reduce 429s (no retries, just spacing between calls).

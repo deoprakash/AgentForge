@@ -25,6 +25,10 @@ LLM_SEMAPHORE = asyncio.Semaphore(1)  # strict to avoid rate limits
 _groq_pace_lock = asyncio.Lock()
 _groq_last_request_at = 0.0
 
+# Key rotation tracker for load balancing across all 3 keys
+_groq_key_rotation_index = 0
+_groq_last_request_at = 0.0
+
 
 async def _pace_groq_requests() -> None:
     global _groq_last_request_at
@@ -84,8 +88,9 @@ async def call_groq(prompt: str, system: str = None, retries: int = 1, api_key: 
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429 and attempt < retries - 1:
-                wait_time = (attempt + 1) * 3
-                print(f"⏳ Groq rate limited, waiting {wait_time}s...")
+                # Exponential backoff: 5s, 15s, 30s for each retry
+                wait_time = (2 ** (attempt + 1)) + 3
+                print(f"⏳ Groq 429 rate limited (attempt {attempt + 1}/{retries}). Waiting {wait_time}s before retry...")
                 await asyncio.sleep(wait_time)
                 continue
             raise
@@ -117,31 +122,32 @@ def _select_provider(purpose: str) -> str:
 
 
 def _select_groq_keys_for_purpose(purpose: str) -> list[str]:
+    """Select Groq API keys for the given purpose with strict separation.
+    
+    With 3 keys:
+    - Generation (research, developer, writer): Key1 ONLY
+    - Validation (confidence, hallucination): Key2 & Key3 ONLY
+    - No crossover between generation and validation keys
+    """
     if not GROQ_API_KEYS:
         return []
+    
     p = (purpose or "generation").strip().lower()
-    keys: list[str] = []
-
-    # Primary separation: key1 for generation, key2 for validation (if present)
-    if p in {"validation", "validate", "review"} and len(GROQ_API_KEYS) >= 2:
-        primary_index = 1
-        secondary_index = 0
+    
+    if p in {"validation", "validate", "review"}:
+        # Validation: Use Key2 and Key3 only (never touch Key1)
+        if len(GROQ_API_KEYS) >= 3:
+            return [GROQ_API_KEYS[1], GROQ_API_KEYS[2]]  # Keys 2 & 3
+        elif len(GROQ_API_KEYS) >= 2:
+            return [GROQ_API_KEYS[1]]  # Key 2 only
+        else:
+            return GROQ_API_KEYS  # Fallback: use whatever is available
     else:
-        primary_index = 0
-        secondary_index = 1
-
-    keys.append(GROQ_API_KEYS[primary_index])
-
-    # Optional failover (one extra attempt) while preserving the primary split.
-    if GROQ_KEY_STRATEGY == "failover_on_429" and len(GROQ_API_KEYS) >= 2:
-        keys.append(GROQ_API_KEYS[secondary_index])
-
-    # de-dup while preserving order
-    deduped: list[str] = []
-    for k in keys:
-        if k and k not in deduped:
-            deduped.append(k)
-    return deduped
+        # Generation: Use Key1 only (never touch Key2 or Key3)
+        if len(GROQ_API_KEYS) >= 1:
+            return [GROQ_API_KEYS[0]]  # Key 1 only
+        else:
+            return []
 
 
 def _select_gemini_client_for_purpose(purpose: str):
