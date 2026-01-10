@@ -38,16 +38,15 @@ try:
 	GROQ_MIN_INTERVAL_SECONDS = float(os.getenv("GROQ_MIN_INTERVAL_SECONDS", "0"))
 except Exception:
 	GROQ_MIN_INTERVAL_SECONDS = 0.0
+
+# Model selection for different purposes
+GROQ_VALIDATION_MODEL = os.getenv("GROQ_VALIDATION_MODEL", "llama-3.1-8b-instant")
+
 MONGO_URI = os.getenv("MONGO_URI")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_KEY_2 = os.getenv("GEMINI_API_KEY_2")
-
-_gemini_keys_raw = os.getenv("GEMINI_API_KEYS", "").strip()
-GEMINI_API_KEYS = [k.strip() for k in _gemini_keys_raw.split(",") if k.strip()] if _gemini_keys_raw else []
-_append_key(GEMINI_API_KEYS, GEMINI_API_KEY)
-_append_key(GEMINI_API_KEYS, GEMINI_API_KEY_2)
-
-# Ollama (local) configuration
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
-OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "120"))
+# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# GEMINI_API_KEY_2 = os.getenv("GEMINI_API_KEY_2")
+#
+# _gemini_keys_raw = os.getenv("GEMINI_API_KEYS", "").strip()
+# GEMINI_API_KEYS = [k.strip() for k in _gemini_keys_raw.split(",") if k.strip()] if _gemini_keys_raw else []
+# _append_key(GEMINI_API_KEYS, GEMINI_API_KEY)
+# _append_key(GEMINI_API_KEYS, GEMINI_API_KEY_2)

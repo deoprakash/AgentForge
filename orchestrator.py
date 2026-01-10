@@ -241,14 +241,15 @@ class Orchestrator:
         await self.memory.save_document(session_id, final_doc)
 
         # 4) Calculate and store confidence score (no rewrite/regeneration)
-        confidence_result = None
+        confidence_result = {"confidence_score": 40, "source": "fallback"}
         try:
             confidence_result = await self.confidence.evaluate_and_store(
                 session_id,
                 (final_doc or {}).get("document", ""),
             )
-        except Exception:
-            confidence_result = None
+        except Exception as e:
+            print(f"⚠️ Confidence evaluation failed: {e}")
+            confidence_result = {"confidence_score": 40, "source": "fallback", "error": str(e)}
 
         # 5) Optional: send ONE email with the final draft only.
         email_result = None

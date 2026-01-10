@@ -6,7 +6,7 @@ from config import (
     GROQ_API_KEYS,
     GROQ_KEY_STRATEGY,
     GROQ_MIN_INTERVAL_SECONDS,
-    GEMINI_API_KEYS,
+    GROQ_VALIDATION_MODEL,
     LLM_PROVIDER,
     LLM_GENERATION_PROVIDER,
     LLM_VALIDATION_PROVIDER,
@@ -43,19 +43,19 @@ async def _pace_groq_requests() -> None:
 # --------------------------------------------------
 # Configure Gemini client (new SDK)
 # --------------------------------------------------
-gemini_clients: list = []
-if GeminiClient:
-    for key in (GEMINI_API_KEYS or []):
-        try:
-            gemini_clients.append(GeminiClient(api_key=key))
-        except Exception:
-            pass
+# gemini_clients: list = []
+# if GeminiClient:
+#     for key in (GEMINI_API_KEYS or []):
+#         try:
+#             gemini_clients.append(GeminiClient(api_key=key))
+#         except Exception:
+#             pass
 
 
 # --------------------------------------------------
 # Groq call with retry
 # --------------------------------------------------
-async def call_groq(prompt: str, system: str = None, retries: int = 1, api_key: str | None = None):
+async def call_groq(prompt: str, system: str = None, retries: int = 1, api_key: str | None = None, model: str = "llama-3.1-8b-instant"):
     url = "https://api.groq.com/openai/v1/chat/completions"
     if not api_key:
         raise RuntimeError("Groq API key not configured")
@@ -70,7 +70,7 @@ async def call_groq(prompt: str, system: str = None, retries: int = 1, api_key: 
     messages.append({"role": "user", "content": prompt})
 
     body = {
-        "model": "llama-3.1-8b-instant",
+        "model": model,
         "messages": messages
     }
 
@@ -175,11 +175,14 @@ async def call_llm(prompt: str, system: str = None, purpose: str = "generation")
             keys = _select_groq_keys_for_purpose(purpose)
             if not keys:
                 return "__LLM_UNAVAILABLE__"
+            # Select model based on purpose
+            p = (purpose or "generation").strip().lower()
+            model = GROQ_VALIDATION_MODEL if p in {"validation", "validate", "review"} else "llama-3.1-8b-instant"
             async with LLM_SEMAPHORE:
                 last_status = None
                 for i, key in enumerate(keys):
                     try:
-                        return await call_groq(prompt, system, retries=1, api_key=key)
+                        return await call_groq(prompt, system, retries=1, api_key=key, model=model)
                     except httpx.HTTPStatusError as e:
                         status = getattr(e.response, "status_code", None)
                         last_status = status

@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import certifi  # use system-trusted certs for TLS connections
+
 try:
     from motor.motor_asyncio import AsyncIOMotorClient
     MOTOR_AVAILABLE = True
@@ -10,7 +12,12 @@ except ImportError:
 class MemoryStore:
     def __init__(self, mongo_uri: Optional[str] = None, db_name: str = "AgentForge"):
         if mongo_uri and MOTOR_AVAILABLE:
-            self.client = AsyncIOMotorClient(mongo_uri)
+            # Explicitly provide CA bundle to avoid Windows cert store issues
+            self.client = AsyncIOMotorClient(
+                mongo_uri,
+                tls=True,
+                tlsCAFile=certifi.where(),
+            )
             self.db = self.client[db_name]
             self.use_mongo = True
         else:
