@@ -176,7 +176,7 @@ LinkedIn: https://www.linkedin.com/in/deo-prakash-152265225/
 ---
 
 ## 📄 License
-MIT License
+Apache License
 
 ---
 
