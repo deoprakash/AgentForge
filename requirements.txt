@@ -11,3 +11,4 @@ aiofiles==23.2.1
 google-genai
 certifi==2024.2.2
 # ensure certifi is present for TLS CA bundle used by Mongo client
+langgraph>=0.2.0

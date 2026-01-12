@@ -45,7 +45,7 @@ class CEOAgent(BaseAgent):
 
         return None
 
-    async def create_plan(self, goal: str):
+    async def create_plan(self, goal: str, key_index: int | None = None):
         prompt = f"""You are the CEO agent. Break the user's goal into a strict, sequential handoff across exactly three agents.
 
 Return ONLY valid JSON with this exact structure and ordering:
@@ -71,7 +71,7 @@ Rules:
 User goal:
 {goal}
 """
-        raw = await self.think(prompt)
+        raw = await self.think(prompt, key_index=key_index)
         print(f"DEBUG: Raw LLM response: {raw}")
 
         parsed = self._extract_json_from_text(raw)
@@ -96,4 +96,52 @@ User goal:
                     "description": "Write the final response using the research and the technical outline.",
                 },
             ],
+        }
+
+    async def create_plan_and_research(self, goal: str, key_index: int | None = None) -> dict:
+        """Combined CEO + Research: Create plan AND perform initial research in one API call."""
+        prompt = f"""You are the CEO agent. For the user's goal:
+
+1. Create a strategic plan with exactly 3 tasks (Developer, Writer tasks only - skip Research since you'll do it now)
+2. Perform initial research: gather key facts, context, and information needed for this goal
+
+Return ONLY valid JSON:
+{{
+    "goal": "...",
+    "tasks": [
+        {{"assigned_agent": "Developer", "description": "..."}},
+        {{"assigned_agent": "Writer", "description": "..."}}
+    ],
+    "research": {{
+        "summary": "key findings and facts",
+        "results": ["fact 1", "fact 2", "fact 3"]
+    }}
+}}
+
+User goal:
+{goal}
+"""
+        raw = await self.think(prompt, key_index=key_index)
+        parsed = self._extract_json_from_text(raw)
+        
+        if parsed and "research" in parsed:
+            return parsed
+        
+        # Fallback
+        return {
+            "goal": goal,
+            "tasks": [
+                {
+                    "assigned_agent": "Developer",
+                    "description": "Create a concise technical outline or mermaid diagram that structures the solution.",
+                },
+                {
+                    "assigned_agent": "Writer",
+                    "description": "Write the final response using the research and the technical outline.",
+                },
+            ],
+            "research": {
+                "summary": f"Initial research for: {goal}",
+                "results": [f"Result for {goal} #1", f"Result for {goal} #2", f"Result for {goal} #3"]
+            }
         }

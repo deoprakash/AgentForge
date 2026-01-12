@@ -57,7 +57,7 @@ class ConfidenceAgent(BaseAgent):
     Returns both a confidence score and a hallucination risk assessment.
     """
 
-    async def evaluate(self, document: str) -> dict:
+    async def evaluate(self, document: str, key_index: int | None = None) -> dict:
         """Evaluate confidence score for a document."""
         prompt = f"""You are a confidence scoring agent.
 
@@ -75,7 +75,7 @@ Document:
 ----------------
 """
 
-        raw = await self.think(prompt, purpose="validation")
+        raw = await self.think(prompt, purpose="validation", key_index=key_index)
         raw_text = str(raw or "").strip()
 
         # Handle router sentinels safely.
@@ -87,7 +87,7 @@ Document:
             score = 40
         return {"confidence_score": _clamp_score(score), "source": "llm"}
 
-    async def detect_hallucinations(self, document: str) -> dict:
+    async def detect_hallucinations(self, document: str, key_index: int | None = None) -> dict:
         """Detect hallucinations and unsupported claims in a document."""
         prompt = f"""You are a hallucination detection expert.
 
@@ -112,7 +112,7 @@ Document:
 ----------------
 """
 
-        raw = await self.think(prompt, purpose="validation")
+        raw = await self.think(prompt, purpose="validation", key_index=key_index)
         raw_text = str(raw or "").strip()
 
         # Handle router sentinels safely.
@@ -158,24 +158,76 @@ Document:
             "source": "fallback"
         }
 
-    async def evaluate_and_store(self, session_id: str, document: str) -> dict:
-        """Run both confidence and hallucination checks, store results."""
-        # Get confidence score
-        confidence_result = await self.evaluate(document)
+    async def evaluate_and_store(self, session_id: str, document: str, key_index: int | None = None) -> dict:
+        """Run both confidence and hallucination checks in ONE API call, store results."""
+        prompt = f"""You are a quality assurance agent. Evaluate this document for:
+1. Confidence score (0-100): How well-written, complete, and reliable is it?
+2. Hallucination risk (LOW/MEDIUM/HIGH): Are there unsupported claims or factual errors?
+
+Return ONLY valid JSON:
+{{
+    "confidence_score": <int 0-100>,
+    "hallucination_risk": "LOW|MEDIUM|HIGH",
+    "risk_score": <int 0-100>,
+    "issues": ["issue1", "issue2"],
+    "summary": "brief summary of quality assessment"
+}}
+
+Examples:
+- High quality: {{"confidence_score": 95, "hallucination_risk": "LOW", "risk_score": 10, "issues": [], "summary": "Excellent document"}}
+- Medium quality: {{"confidence_score": 75, "hallucination_risk": "MEDIUM", "risk_score": 40, "issues": ["minor unsupported claim"], "summary": "Good but needs refinement"}}
+- Low quality: {{"confidence_score": 50, "hallucination_risk": "HIGH", "risk_score": 80, "issues": ["major factual errors"], "summary": "Significant issues found"}}
+
+Document:
+----------------
+{document}
+----------------
+"""
         
-        # Get hallucination assessment
-        hallucination_result = await self.detect_hallucinations(document)
+        raw = await self.think(prompt, purpose="validation", key_index=key_index)
+        raw_text = str(raw or "").strip()
         
-        # Combine results
-        combined_result = {
-            "confidence_score": confidence_result.get("confidence_score", 40),
-            "confidence_source": confidence_result.get("source", "unknown"),
-            "hallucination_risk": hallucination_result.get("hallucination_risk", "MEDIUM"),
-            "hallucination_risk_score": hallucination_result.get("risk_score", 50),
-            "hallucination_issues": hallucination_result.get("issues", []),
-            "hallucination_summary": hallucination_result.get("summary", ""),
-        }
+        # Handle router sentinels
+        if "__LLM_RATE_LIMITED__" in raw_text or "__LLM_UNAVAILABLE__" in raw_text:
+            return {
+                "confidence_score": 40,
+                "confidence_source": "fallback",
+                "hallucination_risk": "MEDIUM",
+                "hallucination_risk_score": 50,
+                "hallucination_issues": [],
+                "hallucination_summary": "Unable to assess (LLM unavailable)",
+            }
         
+        # Parse JSON response
+        try:
+            start = raw_text.find("{")
+            end = raw_text.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                json_str = raw_text[start:end+1]
+                parsed = json.loads(json_str)
+                
+                combined_result = {
+                    "confidence_score": _clamp_score(parsed.get("confidence_score", 40)),
+                    "confidence_source": "llm",
+                    "hallucination_risk": str(parsed.get("hallucination_risk", "MEDIUM")).upper(),
+                    "hallucination_risk_score": _clamp_score(parsed.get("risk_score", 50)),
+                    "hallucination_issues": list(parsed.get("issues", [])) or [],
+                    "hallucination_summary": str(parsed.get("summary", "No summary available")),
+                }
+            else:
+                raise ValueError("No JSON found")
+        except Exception as e:
+            print(f"⚠️ Combined evaluation parsing error: {e}")
+            combined_result = {
+                "confidence_score": 40,
+                "confidence_source": "fallback",
+                "hallucination_risk": "MEDIUM",
+                "hallucination_risk_score": 50,
+                "hallucination_issues": [],
+                "hallucination_summary": "Unable to parse evaluation",
+            }
+        
+        # Store results
         try:
             await self.memory.save_actions(
                 session_id,
@@ -190,6 +242,6 @@ Document:
                 },
             )
         except Exception:
-            # Avoid breaking the main flow if storage fails.
             pass
+        
         return combined_result

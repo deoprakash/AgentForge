@@ -59,14 +59,17 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, model_validator
-from orchestrator import Orchestrator
+from config import APP_HOST, APP_PORT, MONGO_URI, LLM_PROVIDER, USE_LANGGRAPH
+if USE_LANGGRAPH:
+    from orchestrator_langgraph import LangGraphOrchestrator as SelectedOrchestrator
+else:
+    from orchestrator import Orchestrator as SelectedOrchestrator
 from memory import MemoryStore
-from config import APP_HOST, APP_PORT, MONGO_URI, LLM_PROVIDER
 from utils import serialize_doc, parse_command
 
 app = FastAPI()
 memory = MemoryStore(MONGO_URI)
-orchestrator = Orchestrator(memory)
+orchestrator = SelectedOrchestrator(memory)
 
 
 # ===============================
@@ -200,9 +203,25 @@ async def approve(req: ApprovalRequest):
 # ===============================
 
 if __name__ == "__main__":
+    import os, sys, asyncio
+
+    # On Windows, default to no reload to avoid stdin/subprocess issues.
+    reload_env = os.getenv("UVICORN_RELOAD")
+    if reload_env is not None:
+        use_reload = reload_env.strip().lower() in {"1", "true", "yes", "y"}
+    else:
+        use_reload = (os.name != "nt")
+
+    # Use selector policy for better Windows compatibility
+    try:
+        if sys.platform.startswith("win"):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    except Exception:
+        pass
+
     uvicorn.run(
         "server:app",
         host=APP_HOST,
         port=APP_PORT,
-        reload=True
+        reload=use_reload,
     )

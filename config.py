@@ -11,6 +11,7 @@ EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "false").strip().lower() in {"1", "tr
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 LLM_GENERATION_PROVIDER = os.getenv("LLM_GENERATION_PROVIDER", LLM_PROVIDER).strip().lower()
 LLM_VALIDATION_PROVIDER = os.getenv("LLM_VALIDATION_PROVIDER", LLM_PROVIDER).strip().lower()
+USE_LANGGRAPH = os.getenv("USE_LANGGRAPH", "false").strip().lower() in {"1", "true", "yes", "y"}
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # Optional second and third keys for failover and rotation.
 GROQ_API_KEY_2 = os.getenv("GROQ_API_KEY_2")

@@ -1,6 +1,7 @@
 import httpx
 import asyncio
 import time
+import certifi
 
 from config import (
     GROQ_API_KEYS,
@@ -44,6 +45,22 @@ async def _pace_groq_requests() -> None:
         _groq_last_request_at = time.monotonic()
 
 
+def _get_next_groq_key(keys: list[str]) -> str:
+    """Round-robin key selection for rotation strategy."""
+    global _groq_key_rotation_index
+    if not keys:
+        raise RuntimeError("No Groq API keys available")
+    
+    if GROQ_KEY_STRATEGY.strip().lower() == "rotation":
+        # Rotate through all keys
+        key = keys[_groq_key_rotation_index % len(keys)]
+        _groq_key_rotation_index += 1
+        return key
+    else:
+        # Default: use first key
+        return keys[0]
+
+
 # --------------------------------------------------
 # Configure Gemini client (new SDK)
 # --------------------------------------------------
@@ -81,7 +98,8 @@ async def call_groq(prompt: str, system: str = None, retries: int = 1, api_key: 
     for attempt in range(retries):
         try:
             await _pace_groq_requests()
-            async with httpx.AsyncClient(timeout=30) as client:
+            # Use certifi CA bundle for proper SSL verification
+            async with httpx.AsyncClient(timeout=30, verify=certifi.where()) as client:
                 response = await client.post(url, headers=headers, json=body)
                 response.raise_for_status()
                 return response.json()["choices"][0]["message"]["content"]
@@ -122,16 +140,20 @@ def _select_provider(purpose: str) -> str:
 
 
 def _select_groq_keys_for_purpose(purpose: str) -> list[str]:
-    """Select Groq API keys for the given purpose with strict separation.
+    """Select Groq API keys for the given purpose.
     
-    With 3 keys:
-    - Generation (research, developer, writer): Key1 ONLY
-    - Validation (confidence, hallucination): Key2 & Key3 ONLY
-    - No crossover between generation and validation keys
+    With rotation strategy: returns all keys for load balancing.
     """
     if not GROQ_API_KEYS:
         return []
     
+    strategy = GROQ_KEY_STRATEGY.strip().lower()
+    
+    # With rotation, return all keys for round-robin distribution
+    if strategy == "rotation":
+        return GROQ_API_KEYS
+    
+    # Legacy: strict separation by purpose
     p = (purpose or "generation").strip().lower()
     
     if p in {"validation", "validate", "review"}:
@@ -171,7 +193,7 @@ def _select_gemini_clients_for_purpose(purpose: str):
     return [primary, secondary]
 
 
-async def call_llm(prompt: str, system: str = None, purpose: str = "generation"):
+async def call_llm(prompt: str, system: str = None, purpose: str = "generation", key_index: int | None = None):
     provider = _select_provider(purpose)
 
     async def _call_with_provider(provider_name: str) -> str:
@@ -186,8 +208,27 @@ async def call_llm(prompt: str, system: str = None, purpose: str = "generation")
             model = GROQ_VALIDATION_MODEL if p in {"validation", "validate", "review"} else "llama-3.1-8b-instant"
             async with LLM_SEMAPHORE:
                 last_status = None
-                for i, key in enumerate(keys):
+                # If a specific key index is requested, use only that key
+                if key_index is not None and 0 <= key_index < len(keys):
                     try:
+                        key = keys[key_index]
+                        return await call_groq(prompt, system, retries=1, api_key=key, model=model)
+                    except httpx.HTTPStatusError as e:
+                        status = getattr(e.response, "status_code", None)
+                        last_status = status
+                        if status == 429:
+                            print("⚠️ Groq rate limited (429) on fixed key.")
+                            return "__LLM_RATE_LIMITED__"
+                        print(f"⚠️ Groq HTTP error ({status}).")
+                        return "__LLM_UNAVAILABLE__"
+                    except Exception as e:
+                        print(f"⚠️ Groq failed: {e}")
+                        return "__LLM_UNAVAILABLE__"
+
+                for i in range(len(keys)):
+                    try:
+                        # Use round-robin key selection with rotation strategy
+                        key = _get_next_groq_key(keys)
                         return await call_groq(prompt, system, retries=1, api_key=key, model=model)
                     except httpx.HTTPStatusError as e:
                         status = getattr(e.response, "status_code", None)
