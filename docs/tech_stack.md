@@ -179,12 +179,12 @@ AgentForge leverages a modern Python async stack optimized for LLM orchestration
   - Fastest inference in market (LPU architecture)
   - Free tier: 30 requests/min per key (90 RPM with 3 keys)
   - Low latency (~1-2s response time)
-- **API Endpoint**: `https://api.groq.com/openai/v1/chat/completions`
+- **API Endpoint**: `https://api.llmprovider.com/v1/chat/completions`
 - **Rate Limits**:
   - 30 requests/min per key
   - 14400 tokens/min per model
 - **Alternative Considered**: OpenAI GPT-4 (expensive), Anthropic Claude (slower)
-- **Documentation**: https://console.groq.com/docs
+- **Documentation**: Refer to your LLM provider's documentation
 
 ---
 
@@ -245,17 +245,17 @@ mypy = "^1.10.0"          # Type checker (not yet used)
   - Auto-scaling
   - Built-in backups
   - TLS encryption
-- **Connection**: `mongodb+srv://` URI with Motor
+- **Connection**: Standard MongoDB connection string with Motor
 - **Alternative**: Self-hosted MongoDB (more maintenance)
-- **Documentation**: https://www.mongodb.com/atlas
+- **Documentation**: Refer to MongoDB official documentation
 
-### Gmail SMTP
+### Email SMTP
 - **Purpose**: Email delivery
-- **Server**: `smtp.gmail.com:587` (TLS)
-- **Authentication**: App-specific password (2FA required)
-- **Rate Limits**: 500 emails/day (free tier)
-- **Alternative Considered**: SendGrid, AWS SES (overkill for current usage)
-- **Documentation**: https://support.google.com/mail/answer/7126229
+- **Server**: `smtp.example.com:587` (TLS)
+- **Authentication**: App-specific password or OAuth
+- **Rate Limits**: Provider-specific limits apply
+- **Alternative Considered**: SendGrid, AWS SES, Mailgun
+- **Documentation**: Refer to your email provider documentation
 
 ---
 

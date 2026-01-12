@@ -245,20 +245,20 @@ USE_LANGGRAPH=true
 APP_HOST=0.0.0.0
 APP_PORT=8000
 
-# LLM (3 keys for load balancing)
-GROQ_API_KEY=gsk_...
-GROQ_API_KEY_2=gsk_...
-GROQ_API_KEY_3=gsk_...
+# LLM Configuration
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_API_KEY_2=your_second_api_key_here
+GROQ_API_KEY_3=your_third_api_key_here
 GROQ_KEY_STRATEGY=rotation
 GROQ_MIN_INTERVAL_SECONDS=0.4
 
 # Database
-MONGO_URI=mongodb+srv://...
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
 
 # Email (optional)
 EMAIL_ENABLED=true
 ALLOW_EMAIL_SENDING=true
-GMAIL_APP_PASSWORD=...
+GMAIL_APP_PASSWORD=your_gmail_app_password
 ```
 
 ### Security Best Practices:

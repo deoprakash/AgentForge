@@ -433,15 +433,15 @@ async def send_email(self, to: str, subject: str, body: str, session_id: str):
 ## Tools Module
 
 ### `tools/gmail_tool.py`
-**Purpose**: Gmail SMTP email sending  
-**Class**: `GmailTool`
+**Purpose**: Email SMTP sending  
+**Class**: `EmailTool`
 
 **Configuration**:
 ```python
-smtp_server = "smtp.gmail.com"
+smtp_server = "smtp.example.com"
 smtp_port = 587  # TLS
-username = GMAIL_USER  # from config
-password = GMAIL_APP_PASSWORD  # App-specific password
+username = EMAIL_USER  # from config
+password = EMAIL_APP_PASSWORD  # App-specific password
 ```
 
 **Security Note**: Requires Gmail App Password (not account password)
