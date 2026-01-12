@@ -5,7 +5,7 @@
 ```
 AgenticAI/
 ├── config.py                     # Environment configuration loader
-├── llm_client.py                 # Unified LLM API client with key rotation
+├── llm_client.py                 # Unified LLM API client
 ├── memory.py                     # MongoDB async persistence layer
 ├── orchestrator_langgraph.py     # LangGraph-based pipeline orchestrator
 ├── server.py                     # FastAPI REST API server
@@ -81,7 +81,7 @@ if USE_LANGGRAPH:
 ---
 
 ### `llm_client.py`
-**Purpose**: Unified interface for LLM API calls with multi-key load balancing  
+**Purpose**: Unified interface for LLM API calls  
 **Dependencies**: `httpx`, `certifi`, `config`  
 **Key Functions**:
 

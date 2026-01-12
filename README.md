@@ -48,7 +48,6 @@ Each agent has a **single, clearly defined responsibility**, improving system pr
 | Multi-Agent Orchestration | Modular and scalable agent workflows |
 | Quality Validation | Confidence scoring and hallucination detection |
 | API Call Optimization | Significant reduction in LLM usage |
-| Multi-Key Routing | Improved resilience to rate limits |
 | Async Architecture | High-throughput non-blocking execution |
 | Persistent Memory | Context-aware task processing |
 | REST API | External system integration |
@@ -88,7 +87,6 @@ Each agent has a **single, clearly defined responsibility**, improving system pr
 
 ### ✔ Optimized LLM Usage
 - Only **4 LLM calls per complete workflow**
-- Fixed routing of agents to API keys
 - Configurable execution delays
 - Retry and fallback handling
 

@@ -183,7 +183,6 @@ AgentForge leverages a modern Python async stack optimized for LLM orchestration
 - **Rate Limits**:
   - 30 requests/min per key
   - 14400 tokens/min per model
-- **Strategy**: 3-key rotation with fixed routing per agent
 - **Alternative Considered**: OpenAI GPT-4 (expensive), Anthropic Claude (slower)
 - **Documentation**: https://console.groq.com/docs
 
@@ -354,11 +353,6 @@ mypy = "^1.10.0"          # Type checker (not yet used)
 - Native JSON support (no ORM needed)
 - Async driver (Motor)
 - Free hosted tier (Atlas)
-
-### Why 3 API Keys?
-- Rate limit: 30 RPM per key → 90 RPM total
-- Fixed routing prevents key exhaustion
-- Load distribution across keys
 
 ---
 

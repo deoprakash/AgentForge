@@ -225,7 +225,6 @@ class MemoryStore:
 ### Current Optimizations:
 - **API Call Reduction**: 4 calls per report (67% reduction from 12-call baseline)
 - **Combined Operations**: CEO+Research (1 call), Confidence+Hallucination (1 call)
-- **Load Balancing**: 3-key rotation with fixed routing prevents rate limits
 - **Async I/O**: All operations non-blocking (FastAPI, Motor, httpx)
 - **Pacing**: 0.4s global interval + 2s state transition delays
 

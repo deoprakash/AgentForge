@@ -197,18 +197,7 @@ client = AsyncIOMotorClient(
 ### Root Cause
 Exceeded rate limit of 30 RPM per API key.
 
-### Solution 1: Multi-Key Rotation
-```python
-# config.py
-GROQ_API_KEY=gsk_...
-GROQ_API_KEY_2=gsk_...
-GROQ_API_KEY_3=gsk_...
-GROQ_KEY_STRATEGY=rotation
-```
-
-**Effect**: 30 RPM × 3 keys = 90 RPM total capacity
-
-### Solution 2: Global Pacing
+### Solution: Global Pacing
 ```python
 # config.py
 GROQ_MIN_INTERVAL_SECONDS=0.4  # 0.4s = 150 req/min max (well under limit)
@@ -486,7 +475,6 @@ confidence = await confidence.evaluate_and_store()  # ~5s (combined)
 
 **2. No Rate Limiting Protection**
 - Add `GROQ_MIN_INTERVAL_SECONDS=0.4`
-- Use multi-key rotation
 
 **3. Blocking Database Operations**
 ```python
