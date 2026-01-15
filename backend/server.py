@@ -157,6 +157,62 @@ async def run_legacy(req: RunLegacyRequest):
 
 
 # ===============================
+# 📊 Get Session by ID
+# ===============================
+
+@app.get("/session/{session_id}")
+async def get_session(session_id: str):
+    """Retrieve a session and its results by session ID."""
+    try:
+        # Get session data from memory
+        session_doc = await memory.get_session(session_id)
+        
+        if not session_doc:
+            print(f"DEBUG: Session not found for session_id: {session_id}")
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Session not found: {session_id}"}
+            )
+        
+        print(f"DEBUG: Found session for session_id: {session_id}")
+        
+        # Fetch the latest document from the 'document' collection for this session_id
+        final_doc = None
+        if memory.use_mongo:
+            final_doc = await memory.db.document.find_one({"session_id": session_id}, sort=[("created_at", -1)])
+        else:
+            final_doc = None
+
+        # Get plan
+        plan = await memory.get_latest_plan(session_id)
+
+        # Get research results
+        research = await memory.get_research(session_id)
+
+        # Construct response
+        response = {
+            "session_id": session_id,
+            "goal": session_doc.get("goal"),
+            "email": session_doc.get("email"),
+            "created_at": session_doc.get("created_at"),
+            "plan": plan,
+            "final": final_doc,  # This will include the document field
+            "handoff": {
+                "research": research,
+                "writer": final_doc
+            }
+        }
+
+        return JSONResponse(content=serialize_doc(response))
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to retrieve session", "detail": str(e)}
+        )
+
+
+# ===============================
 # 🧠 Human-in-the-Loop Approval
 # ===============================
 

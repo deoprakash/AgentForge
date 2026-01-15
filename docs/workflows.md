@@ -551,13 +551,14 @@ Total:         ~33-48s per request
 ```
 
 ### API Call Breakdown:
-| Node | API Calls | Key Used |
-|------|-----------|----------|
-| CEO+Research | 1 | Key 1 |
-| Developer | 1 | Key 2 |
-| Writer | 1 | Key 3 |
-| Validation | 1 | Key 1 |
-| **TOTAL** | **4** | 3 keys |
+| Node         | API Calls | Key Used |
+| ------------ | --------- | -------- |
+| CEO+Research | 1         | Key 1    |
+| Developer    | 1         | Key 2    |
+| Writer       | 1         | Key 3    |
+| Confidence   | 1         | Key 1    |
+| Reviewer     | 1         | Key 2    |
+| **TOTAL**    | **5**     | 3 keys   |
 
 **Optimization Impact**: Reduced from 12 calls (legacy) to 4 calls = **67% reduction**
 

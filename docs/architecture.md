@@ -126,13 +126,13 @@ class BaseAgent:
 
 #### **Agent Responsibilities**
 
-| Agent | File | Purpose | API Key | Output |
-|-------|------|---------|---------|--------|
-| **CEO** | `ceo.py` | Strategic planning + initial research | Key 1 (index 0) | Plan + Research findings |
-| **Developer** | `developer.py` | Technical artifacts (diagrams, architecture) | Key 2 (index 1) | Mermaid diagrams, outlines |
-| **Writer** | `writer.py` | Final document generation | Key 3 (index 2) | Formatted report |
-| **Confidence** | `confidence.py` | Quality validation (confidence + hallucination) | Key 1 (index 0) | Quality metrics |
-| **Automation** | `automation.py` | Email delivery via Gmail SMTP | N/A | Email status |
+| Agent          | File            | Purpose                                         | API Key         | Output                     |
+| -------------- | --------------- | ----------------------------------------------- | --------------- | -------------------------- |
+| **CEO**        | `ceo.py`        | Strategic planning + initial research           | Key 1 (index 0) | Plan + Research findings   |
+| **Developer**  | `developer.py`  | Technical artifacts (diagrams, architecture)    | Key 2 (index 1) | Mermaid diagrams, outlines |
+| **Writer**     | `writer.py`     | Final document generation                       | Key 3 (index 2) | Formatted report           |
+| **Confidence** | `confidence.py` | Quality validation (confidence + hallucination) | Key 1 (index 0) | Quality metrics            |
+| **Automation** | `automation.py` | Email delivery via Gmail SMTP                   | N/A             | Email status               |
 
 ---
 

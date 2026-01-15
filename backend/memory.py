@@ -20,10 +20,12 @@ class MemoryStore:
             )
             self.db = self.client[db_name]
             self.use_mongo = True
+            print(f"[MemoryStore] MongoDB connected: {mongo_uri}")
         else:
             self.db = None
             self.use_mongo = False
             self._memory = {}
+            print("[MemoryStore] MongoDB NOT connected. Using in-memory store.")
 
 
 # -------------------- Session ---------------
@@ -43,6 +45,32 @@ class MemoryStore:
                 self._memory['sessions'] = []
             self._memory['sessions'].append(session)
             return session_id
+    
+    async def get_session(self, session_id: str) -> Optional[Dict]:
+        """Retrieve a session by its ID."""
+        if self.use_mongo:
+            from bson.objectid import ObjectId
+            try:
+                # Try to convert to ObjectId first
+                try:
+                    obj_id = ObjectId(session_id)
+                    result = await self.db.sessions.find_one({"_id": obj_id})
+                    if result:
+                        return result
+                except Exception:
+                    pass
+                
+                # If that fails, try to find by session_id field (string match)
+                return await self.db.sessions.find_one({"session_id": session_id})
+            except Exception:
+                return None
+        else:
+            # For in-memory storage, find by matching session_id
+            sessions = self._memory.get('sessions', [])
+            for idx, s in enumerate(sessions):
+                if f"session_{idx}" == session_id or s.get("session_id") == session_id:
+                    return s
+            return None
     
 # --------------------------- Plan --------------------------
 
