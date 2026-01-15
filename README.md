@@ -3,32 +3,54 @@
 
 AgentForge is a **production-ready multi-agent AI orchestration system** that demonstrates **robust, scalable, and well-governed agent workflows** built using modern backend and AI engineering practices.
 
-It focuses on **reliability, efficiency, and quality control** in autonomous AI systems, making it suitable for real-world deployments where correctness, cost, and scalability matter.
+Rather than focusing on isolated agent behavior, AgentForge emphasizes **structured workflows, quality control, and predictable execution**, making it a robust blueprint for real-world autonomous AI systems.
 
 ---
 
-## 🚀 Problem Statement
+## 🔍 Core Concept
 
-Large Language Model (LLM) based systems often struggle in practical deployments due to:
-- Uncontrolled API usage and high operational costs
-- Hallucinated or unreliable outputs
-- Tightly coupled or monolithic agent designs
-- Single-provider dependency and rate-limit failures
-- Lack of workflow governance and persistent context
+Large Language Models (LLMs) are powerful, but without orchestration and governance, AI-driven systems often suffer from:
 
-### ✅ AgentForge Addresses These Challenges By:
-- Introducing **governed multi-agent workflows**
-- Embedding **confidence and hallucination validation**
-- Optimizing LLM usage with **67% fewer API calls**
-- Supporting **multi-key, rate-limit–aware execution**
-- Providing a **fully asynchronous, state-driven architecture**
+- Uncontrolled API usage and escalating costs  
+- Hallucinated or unreliable outputs  
+- Tightly coupled or monolithic agent logic  
+- Fragile execution under rate limits  
+- Lack of validation and persistent context  
+
+AgentForge is designed to address these challenges by introducing **governed multi-agent workflows** with built-in validation and correction mechanisms.
+
+---
+
+## 🎯 What AgentForge Provides
+
+### 🧩 Structured Multi-Agent Orchestration
+AgentForge coordinates multiple specialized agents in a deterministic pipeline, where each agent has a **single, well-defined responsibility**.
+
+### 🛡️ Quality Validation & Confidence Control
+Before delivering results, outputs are evaluated using:
+- Confidence scoring  
+- Hallucination risk classification  
+- Identification of weak or unverifiable sections  
+
+### 🔁 Autonomous Issue Repair
+A dedicated **Reviewer agent** repairs only the problematic parts of the output, preserving correct content while improving reliability.
+
+### ⚡ Optimized LLM Usage
+- Reduced LLM calls per workflow  
+- Multi-key routing to handle rate limits  
+- Asynchronous, non-blocking execution  
+
+### 🧠 Persistent Context
+Session-based memory enables agents to maintain context across workflow stages, improving coherence and consistency.
 
 ---
 
 ## 🧠 High-Level Workflow
 
 ```
-CEO + Research
+     CEO
+      + 
+   Research
       ↓
    Developer
       ↓
@@ -40,13 +62,16 @@ CEO + Research
       ↓
      END
 ```
+## 🏗 Architecture Overview
 
-**5 specialized agents** work together in a linear pipeline:
-- Each agent has a **single, clearly defined responsibility**
-- **Confidence agent** validates quality before reviewer
-- **Reviewer agent** autonomously fixes detected issues
-- Improves system predictability and output quality
+AgentForge is built using principles that prioritize clarity, scalability, and reliability:
 
+- Graph-based workflow orchestration using LangGraph  
+- Async-first backend design using asyncio  
+- Stateless agent execution with persistent memory  
+- Quality gates between workflow stages  
+- Rate-limit–aware LLM access via multi-key routing 
+  
 ---
 
 ## 🎯 Key System Capabilities
@@ -62,7 +87,24 @@ CEO + Research
 
 ---
 
-## 🏗️ Architecture Overview
+## 📂 Project Structure & Setup
+
+AgentForge maintains a clear separation between backend orchestration logic and frontend user interaction.
+
+```
+AgentForge/
+├── backend/    # Multi-agent orchestration, APIs, memory, LLM logic
+├── frontend/   # User interface and client-side integration
+├── .env_example #Store Secrets
+
+
+```
+
+Refer to:
+- **backend/README.md** for backend setup and API details  
+- **frontend/README.md** for frontend setup and UI details  
+
+---
 
 ### Design Principles
 - Graph-based orchestration using LangGraph
@@ -86,27 +128,27 @@ CEO + Research
 
 **Agent Pipeline with API Key Distribution:**
 
-1. **CEO + Research Agent** (API Key 1)
+1. **CEO + Research Agent**
    - Creates strategic plan and task breakdown
    - Conducts initial research and market analysis
    - Combined into single LLM call for efficiency
 
-2. **Developer Agent** (API Key 2)
+2. **Developer Agent**
    - Generates technical artifacts and diagrams
    - Creates Mermaid flowcharts and architecture docs
    - Produces implementation specifications
 
-3. **Writer Agent** (API Key 3)
+3. **Writer Agent**
    - Composes final structured documents
    - Integrates research and technical content
    - Generates professional proposals and reports
 
-4. **Confidence Agent** (API Key 1)
+4. **Confidence Agent**
    - Evaluates output quality and accuracy
    - Scores confidence (0-100) and hallucination risk
    - Identifies specific issues needing correction
 
-5. **Reviewer Agent** (API Key 2) ⭐ NEW
+5. **Reviewer Agent**
    - **Autonomously repairs** detected quality issues
    - Targets specific problems identified by Confidence agent
    - Preserves correct content while fixing errors
@@ -119,63 +161,10 @@ CEO + Research
 - Identification of weak or uncertain sections
 
 ### ✔ Optimized LLM Usage
-- Only **5 LLM calls per complete workflow**
-- Multi-key load balancing (Key1: 2 calls, Key2: 2 calls, Key3: 1 call)
+- Only **4-6 LLM calls per complete workflow**
+- Multi-key load balancing
 - Configurable execution delays (2s between nodes)
 - Retry and fallback handling
-
-### ✔ Backend Infrastructure
-- FastAPI-based REST API
-- Async MongoDB integration
-- Environment-based configuration
-- Robust error handling
-
----
-
-## � Project Structure
-
-```
-AgenticAI/
-├── backend/              # All Python application code
-│   ├── agents/          # Agent implementations
-│   │   ├── ceo.py
-│   │   ├── research.py
-│   │   ├── developer.py
-│   │   ├── writer.py
-│   │   ├── confidence.py
-│   │   ├── reviewer.py  # NEW: Issue repair agent
-│   │   └── automation.py
-│   ├── tools/           # External integrations
-│   ├── outputs/         # Generated artifacts
-│   ├── config.py        # Configuration
-│   ├── server.py        # FastAPI server
-│   ├── orchestrator_langgraph.py  # LangGraph pipeline
-│   ├── memory.py        # MongoDB persistence
-│   ├── llm_client.py    # LLM API client
-│   └── utils.py         # Utilities
-├── docs/                # Documentation
-│   ├── architecture.md
-│   ├── workflows.md
-│   └── file_structure.md
-├── .env                 # Environment variables
-└── README.md            # This file
-```
-
----
-
-## �🛠️ Technology Stack
-
-| Category | Technologies |
-|--------|-------------|
-| Language | Python 3.12 |
-| Backend | FastAPI |
-| Orchestration | LangGraph |
-| Async Runtime | asyncio |
-| Database | MongoDB (Motor) |
-| LLM Provider | Groq (multi-key routing) |
-| Validation | Pydantic |
-| HTTP Client | httpx |
-| Config | python-dotenv |
 
 ---
 
@@ -184,7 +173,7 @@ AgenticAI/
 ![Metrics](metrics.jpeg)
 
 - **5 specialized agents** orchestrated via LangGraph state machine
-- **5 LLM calls per workflow** (optimized from 12+ autonomous calls)
+- **4-6 LLM calls per workflow** (optimized from 12+ autonomous calls)
 - Persistent memory using MongoDB with session-based context
 - Built-in confidence & hallucination risk scoring
 - **Reviewer agent** for autonomous quality repair
@@ -240,54 +229,6 @@ AgenticAI/
 - ✅ Targeted repair by Reviewer agent (no full rewrite)
 - ✅ Quality improvement without human intervention
 - ✅ Final output uses reviewed version
-
----
-
-## ⚙️ Quick Start
-
-### Installation
-```bash
-git clone https://github.com/deoprakash/AgentForge.git
-cd AgentForge
-pip install -r backend/requirements.txt
-```
-
-### Configuration
-Create a `.env` file in the root directory:
-```env
-# LLM API Keys
-GROQ_API_KEY=your_key_1
-GROQ_API_KEY_2=your_key_2
-GROQ_API_KEY_3=your_key_3
-
-# MongoDB
-MONGO_URI=mongodb+srv://...
-
-# Orchestration
-USE_LANGGRAPH=true
-
-# Server
-APP_HOST=0.0.0.0
-APP_PORT=8000
-```
-
-### Run Server
-```bash
-cd backend
-python server.py
-```
-
-API runs at:
-```
-http://localhost:8000
-```
-
-### Test Endpoint
-```bash
-curl -X POST http://localhost:8000/run \
-  -H "Content-Type: application/json" \
-  -d '{"goal": "Write a proposal for warehouse optimization"}'
-```
 
 ---
 

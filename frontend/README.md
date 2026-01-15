@@ -1,3 +1,73 @@
+# AgentForge — Frontend
+
+React + Vite frontend for AgentForge — a multi-agent AI orchestration UI.
+
+## Tech Stack
+
+- React 18
+- Vite
+- Tailwind CSS
+- Framer Motion
+- Axios
+
+## Quick start
+
+1. Install dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+2. Run dev server
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+3. Build for production
+
+```bash
+npm run build
+npm run preview
+```
+
+## Important files
+
+- `src/App.jsx` — app entry and page routing (home / about / history / final draft)
+- `src/components/` — UI components (Header, InputForm, ResultsPanel, History, FinalDraftView, etc.)
+- `src/services/api.js` — Axios API client (exports default `apiService`)
+- `vite.config.js` — Vite config (dev proxy)
+- `tailwind.config.js` & `postcss.config.cjs` — Tailwind/PostCSS config
+
+## Backend / API
+
+- Dev proxy: Vite forwards `/api/*` to the backend (default `http://localhost:8000`) to avoid CORS in development.
+- Optionally set `VITE_API_URL` to a full backend URL to bypass the proxy.
+
+## History & Final Drafts
+
+- The frontend stores minimal history entries locally (only `session_id`, `goal`, `timestamp`).
+- Clicking a History item fetches the full report from the backend using `session_id` and opens a dedicated Final Draft page.
+
+## Troubleshooting
+
+- `404 /api/session/:id`: Ensure backend is running and connected to MongoDB and that the `session_id` exists in the `document` collection.
+- `PostCSS` errors: ensure `postcss.config.cjs` is present (CommonJS) if your project uses `type: module`.
+- `apiService.run is not a function`: confirm `src/services/api.js` exports default `apiService`.
+- If Vite shows stale imports after edits, restart the dev server.
+
+## Development notes
+
+- Tailwind theme/colors live in `tailwind.config.js`.
+- Animations use Framer Motion — tweak in component props for timing/stagger.
+- The UI uses a dark glass theme; keep styling consistent by using the `primary` color utilities in Tailwind.
+
+---
+
+If you'd like, I can also add a `DEVELOPERS.md` with component-level documentation.
 # AgentForge Frontend
 
 Modern, animated React UI for the AgentForge multi-agent AI orchestration platform.
