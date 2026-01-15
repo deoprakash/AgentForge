@@ -34,10 +34,18 @@ CEO + Research
       ↓
      Writer
       ↓
-Confidence & Hallucination Validation
+  Confidence
+      ↓
+   Reviewer
+      ↓
+     END
 ```
 
-Each agent has a **single, clearly defined responsibility**, improving system predictability and output quality.
+**5 specialized agents** work together in a linear pipeline:
+- Each agent has a **single, clearly defined responsibility**
+- **Confidence agent** validates quality before reviewer
+- **Reviewer agent** autonomously fixes detected issues
+- Improves system predictability and output quality
 
 ---
 
@@ -75,10 +83,35 @@ Each agent has a **single, clearly defined responsibility**, improving system pr
 ## 🧩 Core Features
 
 ### ✔ Multi-Agent Orchestration
-- CEO + Research combined for efficient planning
-- Developer agent for technical reasoning
-- Writer agent for structured content generation
-- Validation agent for output verification
+
+**Agent Pipeline with API Key Distribution:**
+
+1. **CEO + Research Agent** (API Key 1)
+   - Creates strategic plan and task breakdown
+   - Conducts initial research and market analysis
+   - Combined into single LLM call for efficiency
+
+2. **Developer Agent** (API Key 2)
+   - Generates technical artifacts and diagrams
+   - Creates Mermaid flowcharts and architecture docs
+   - Produces implementation specifications
+
+3. **Writer Agent** (API Key 3)
+   - Composes final structured documents
+   - Integrates research and technical content
+   - Generates professional proposals and reports
+
+4. **Confidence Agent** (API Key 1)
+   - Evaluates output quality and accuracy
+   - Scores confidence (0-100) and hallucination risk
+   - Identifies specific issues needing correction
+
+5. **Reviewer Agent** (API Key 2) ⭐ NEW
+   - **Autonomously repairs** detected quality issues
+   - Targets specific problems identified by Confidence agent
+   - Preserves correct content while fixing errors
+   - Adds disclaimers for unverifiable claims
+   - Returns refined document as final output
 
 ### ✔ Quality Governance
 - Confidence score (0–100)
@@ -86,8 +119,9 @@ Each agent has a **single, clearly defined responsibility**, improving system pr
 - Identification of weak or uncertain sections
 
 ### ✔ Optimized LLM Usage
-- Only **4 LLM calls per complete workflow**
-- Configurable execution delays
+- Only **5 LLM calls per complete workflow**
+- Multi-key load balancing (Key1: 2 calls, Key2: 2 calls, Key3: 1 call)
+- Configurable execution delays (2s between nodes)
 - Retry and fallback handling
 
 ### ✔ Backend Infrastructure
@@ -98,7 +132,38 @@ Each agent has a **single, clearly defined responsibility**, improving system pr
 
 ---
 
-## 🛠️ Technology Stack
+## � Project Structure
+
+```
+AgenticAI/
+├── backend/              # All Python application code
+│   ├── agents/          # Agent implementations
+│   │   ├── ceo.py
+│   │   ├── research.py
+│   │   ├── developer.py
+│   │   ├── writer.py
+│   │   ├── confidence.py
+│   │   ├── reviewer.py  # NEW: Issue repair agent
+│   │   └── automation.py
+│   ├── tools/           # External integrations
+│   ├── outputs/         # Generated artifacts
+│   ├── config.py        # Configuration
+│   ├── server.py        # FastAPI server
+│   ├── orchestrator_langgraph.py  # LangGraph pipeline
+│   ├── memory.py        # MongoDB persistence
+│   ├── llm_client.py    # LLM API client
+│   └── utils.py         # Utilities
+├── docs/                # Documentation
+│   ├── architecture.md
+│   ├── workflows.md
+│   └── file_structure.md
+├── .env                 # Environment variables
+└── README.md            # This file
+```
+
+---
+
+## �🛠️ Technology Stack
 
 | Category | Technologies |
 |--------|-------------|
@@ -118,41 +183,110 @@ Each agent has a **single, clearly defined responsibility**, improving system pr
 
 ![Metrics](metrics.jpeg)
 
-- 6 specialized agents orchestrated via a fully async DAG
-- 4 LLM calls per workflow (≈67% reduction vs autonomous agents)
-- Persistent memory using MongoDB with ~95% recall accuracy
-- Built-in confidence & hallucination risk scoring (avg risk ≈ 20 / LOW)
-- <2% retry explosion rate with rate-limit handling and failover
-- Optimized for cost, trust, and determinism rather than raw autonomy 
+- **5 specialized agents** orchestrated via LangGraph state machine
+- **5 LLM calls per workflow** (optimized from 12+ autonomous calls)
+- Persistent memory using MongoDB with session-based context
+- Built-in confidence & hallucination risk scoring
+- **Reviewer agent** for autonomous quality repair
+- Optimized for cost, quality, and determinism 
 
 ---
 
 ## 🔄 Example Use Case
 
 **Input:**  
-"Write a proposal for supply chain technology"
+```json
+{
+  "goal": "Write a proposal for warehouse automation technology"
+}
+```
 
-**Output Includes:**
-- Task planning and research summary
-- Technical architecture outline
-- Structured final document
-- Confidence and hallucination scores
-- Optional email delivery
+**Workflow Execution:**
+
+1. **CEO + Research** (2s) → Creates plan + conducts research
+2. **Developer** (2s) → Generates technical diagrams
+3. **Writer** (2s) → Composes full proposal document
+4. **Confidence** (2s) → Evaluates quality, detects issues:
+   - Confidence: 75%
+   - Hallucination Risk: MEDIUM
+   - Issues: ["AGV cost needs verification", "Timeline not validated"]
+5. **Reviewer** (2s) → **Fixes detected issues:**
+   - Adds cost range caveats
+   - Marks timeline as estimate
+   - Provides supporting context
+
+**Final Output:**
+```json
+{
+  "session_id": "ses_a3f7b2c1",
+  "plan": { "tasks": [...] },
+  "handoff": {
+    "research": "Market analysis...",
+    "developer": "```mermaid\ngraph TD...",
+    "writer": "# Warehouse Automation Proposal...",
+    "reviewer": "# Warehouse Automation Proposal (REVISED)..."  
+  },
+  "final": "# Warehouse Automation Proposal (REVISED)\n\nCost: $50K-100K (market estimates)...",
+  "confidence": {
+    "confidence_score": 75,
+    "hallucination_risk": "medium",
+    "hallucination_issues": ["AGV cost needs verification", "Timeline not validated"]
+  }
+}
+```
+
+**Key Features Demonstrated:**
+- ✅ Autonomous issue detection by Confidence agent
+- ✅ Targeted repair by Reviewer agent (no full rewrite)
+- ✅ Quality improvement without human intervention
+- ✅ Final output uses reviewed version
 
 ---
 
 ## ⚙️ Quick Start
 
+### Installation
 ```bash
 git clone https://github.com/deoprakash/AgentForge.git
 cd AgentForge
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
+```
+
+### Configuration
+Create a `.env` file in the root directory:
+```env
+# LLM API Keys
+GROQ_API_KEY=your_key_1
+GROQ_API_KEY_2=your_key_2
+GROQ_API_KEY_3=your_key_3
+
+# MongoDB
+MONGO_URI=mongodb+srv://...
+
+# Orchestration
+USE_LANGGRAPH=true
+
+# Server
+APP_HOST=0.0.0.0
+APP_PORT=8000
+```
+
+### Run Server
+```bash
+cd backend
 python server.py
 ```
 
 API runs at:
 ```
 http://localhost:8000
+```
+
+### Test Endpoint
+```bash
+curl -X POST http://localhost:8000/run \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "Write a proposal for warehouse optimization"}'
 ```
 
 ---
