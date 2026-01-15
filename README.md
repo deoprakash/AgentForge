@@ -7,7 +7,7 @@ Rather than focusing on isolated agent behavior, Intellixa emphasizes **structur
 
 ---
 
-[![Intellixa Demo](Demo.mp4)]
+### [Intellixa Demo](https://drive.google.com/file/d/1UaABvTABw-aO1Hugn5kGsiPHjD_hYfm5/view?usp=drive_link)
 
 ---
 
