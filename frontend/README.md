@@ -1,6 +1,6 @@
-# AgentForge — Frontend
+# Intellixa — Frontend
 
-React + Vite frontend for AgentForge — a multi-agent AI orchestration UI.
+React + Vite frontend for Intellixa — a multi-agent AI orchestration UI.
 
 ## Tech Stack
 
@@ -68,9 +68,9 @@ npm run preview
 ---
 
 If you'd like, I can also add a `DEVELOPERS.md` with component-level documentation.
-# AgentForge Frontend
+# Intellixa Frontend
 
-Modern, animated React UI for the AgentForge multi-agent AI orchestration platform.
+Modern, animated React UI for the Intellixa multi-agent AI orchestration platform.
 
 ## 🚀 Tech Stack
 
@@ -183,4 +183,4 @@ animation: {
 
 ## 📝 License
 
-Part of the AgentForge project.
+Part of the Intellixa project.

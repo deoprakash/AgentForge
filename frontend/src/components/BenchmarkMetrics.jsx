@@ -7,7 +7,7 @@ const BenchmarkMetrics = () => {
       subtitle: 'Lower is better',
       data: [
         { name: 'Single Agent', value: 1.5, isBest: false },
-        { name: 'AgentForge', value: 5.5, isBest: true },
+        { name: 'Intellixa', value: 5.5, isBest: true },
         { name: 'LangGraph', value: 8.5, isBest: false },
         { name: 'CrewAI', value: 10.0, isBest: false },
         { name: 'AutoGPT', value: 22.5, isBest: false },
@@ -20,7 +20,7 @@ const BenchmarkMetrics = () => {
       subtitle: 'Lower is better',
       data: [
         { name: 'Single Agent', value: 0.6, isBest: false },
-        { name: 'AgentForge', value: 1.0, isBest: true },
+        { name: 'Intellixa', value: 1.0, isBest: true },
         { name: 'LangGraph', value: 1.4, isBest: false },
         { name: 'CrewAI', value: 1.6, isBest: false },
         { name: 'AutoGPT', value: 3.0, isBest: false },
@@ -33,7 +33,7 @@ const BenchmarkMetrics = () => {
       subtitle: 'Lower is better',
       data: [
         { name: 'Single Agent', value: 0.0, isBest: false },
-        { name: 'AgentForge', value: 0.5, isBest: true },
+        { name: 'Intellixa', value: 0.5, isBest: true },
         { name: 'LangGraph', value: 1.5, isBest: false },
         { name: 'CrewAI', value: 2.5, isBest: false },
         { name: 'AutoGPT', value: 10.0, isBest: false },
@@ -45,7 +45,7 @@ const BenchmarkMetrics = () => {
       title: 'Hallucination % ↓',
       subtitle: 'Lower is better',
       data: [
-        { name: 'AgentForge', value: 3.0, isBest: true },
+        { name: 'Intellixa', value: 3.0, isBest: true },
         { name: 'LangGraph', value: 8.0, isBest: false },
         { name: 'CrewAI', value: 10.0, isBest: false },
         { name: 'Single Agent', value: 14.0, isBest: false },
@@ -58,7 +58,7 @@ const BenchmarkMetrics = () => {
       title: 'Risk Score ↓',
       subtitle: 'Lower is better',
       data: [
-        { name: 'AgentForge', value: 20, isBest: true },
+        { name: 'Intellixa', value: 20, isBest: true },
         { name: 'LangGraph', value: 35, isBest: false },
         { name: 'LargeGraph', value: 40, isBest: false },
         { name: 'CrewAI', value: 50, isBest: false },
@@ -99,7 +99,7 @@ const BenchmarkMetrics = () => {
         className="mb-8"
       >
         <h2 className="text-3xl font-bold mb-2">Performance Benchmarks</h2>
-        <p className="text-gray-400">AgentForge vs Industry Standards (2026 Metrics)</p>
+        <p className="text-gray-400">Intellixa vs Industry Standards (2026 Metrics)</p>
       </motion.div>
 
       <motion.div
@@ -230,7 +230,7 @@ const BenchmarkMetrics = () => {
       >
         <h3 className="font-semibold text-primary-300 mb-2">Key Insights</h3>
         <ul className="text-sm text-gray-300 space-y-1">
-          <li>✅ AgentForge achieves <span className="text-primary-400 font-semibold">73% reduction</span> in hallucination rates</li>
+          <li>✅ Intellixa achieves <span className="text-primary-400 font-semibold">73% reduction</span> in hallucination rates</li>
           <li>✅ <span className="text-primary-400 font-semibold">60% lower</span> risk score compared to AutoGPT</li>
           <li>✅ Optimized retry logic reduces unnecessary API calls</li>
           <li>✅ Enterprise-grade reliability with confidence validation</li>

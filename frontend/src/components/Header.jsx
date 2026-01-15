@@ -26,7 +26,7 @@ const Header = ({ currentPage = 'home', onBack }) => {
                 />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-white">AgentForge</span>
+            <span className="text-2xl font-bold text-white">Intellixa</span>
           </motion.div>
 
           <motion.div

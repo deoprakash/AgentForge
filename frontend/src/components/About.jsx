@@ -24,7 +24,7 @@ const About = ({ onBack }) => {
           >
             <div className="relative py-4">
               <h1 className="text-7xl md:text-8xl font-black bg-gradient-to-r from-primary-300 via-primary-500 to-primary-700 bg-clip-text text-transparent leading-tight">
-                About AgentForge
+                About Intellixa
               </h1>
               {/* Glow effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-primary-600/20 blur-3xl -z-10 opacity-50"></div>
@@ -38,13 +38,13 @@ const About = ({ onBack }) => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="agent-card mb-8"
           >
-            <h2 className="text-3xl font-bold mb-6">What is AgentForge?</h2>
+            <h2 className="text-3xl font-bold mb-6">What is Intellixa?</h2>
             <div className="space-y-4 text-gray-300">
               <p>
-                AgentForge is an <span className="text-primary-400 font-semibold">enterprise-grade multi-agent AI orchestration platform</span> designed for production-ready autonomous systems. It demonstrates robust, scalable, and well-governed agent workflows built using modern backend and AI engineering practices.
+                Intellixa is an <span className="text-primary-400 font-semibold">enterprise-grade multi-agent AI orchestration platform</span> designed for production-ready autonomous systems. It demonstrates robust, scalable, and well-governed agent workflows built using modern backend and AI engineering practices.
               </p>
               <p>
-                The platform addresses critical challenges in LLM-based systems including uncontrolled API usage, hallucinated outputs, and tightly coupled architectures. AgentForge introduces <span className="text-primary-400 font-semibold">governed multi-agent workflows</span> with embedded quality validation.
+                The platform addresses critical challenges in LLM-based systems including uncontrolled API usage, hallucinated outputs, and tightly coupled architectures. Intellixa introduces <span className="text-primary-400 font-semibold">governed multi-agent workflows</span> with embedded quality validation.
               </p>
             </div>
           </motion.div>
@@ -112,7 +112,7 @@ const About = ({ onBack }) => {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="agent-card mb-8"
           >
-            <h2 className="text-3xl font-bold mb-6">The AgentForge Pipeline</h2>
+            <h2 className="text-3xl font-bold mb-6">The Intellixa Pipeline</h2>
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               {[
                 { name: 'CEO', emoji: '👔', desc: 'Strategic Planning' },

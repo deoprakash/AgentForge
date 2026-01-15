@@ -1,6 +1,6 @@
-# AgentForge — Backend
+# Intellixa — Backend
 
-This folder contains the FastAPI backend for AgentForge (multi-agent orchestration).
+This folder contains the FastAPI backend for Intellixa (multi-agent orchestration).
 
 ## Requirements
 

@@ -1,9 +1,13 @@
-# AgentForge 🤖
+# Intellixa 🤖
 **Enterprise-Grade Multi-Agent AI Orchestration Platform**
 
-AgentForge is a **production-ready multi-agent AI orchestration system** that demonstrates **robust, scalable, and well-governed agent workflows** built using modern backend and AI engineering practices.
+Intellixa is a **production-ready multi-agent AI orchestration system** that demonstrates **robust, scalable, and well-governed agent workflows** built using modern backend and AI engineering practices.
 
-Rather than focusing on isolated agent behavior, AgentForge emphasizes **structured workflows, quality control, and predictable execution**, making it a robust blueprint for real-world autonomous AI systems.
+Rather than focusing on isolated agent behavior, Intellixa emphasizes **structured workflows, quality control, and predictable execution**, making it a robust blueprint for real-world autonomous AI systems.
+
+---
+
+[![Intellixa Demo](Demo.mp4)]
 
 ---
 
@@ -17,14 +21,14 @@ Large Language Models (LLMs) are powerful, but without orchestration and governa
 - Fragile execution under rate limits  
 - Lack of validation and persistent context  
 
-AgentForge is designed to address these challenges by introducing **governed multi-agent workflows** with built-in validation and correction mechanisms.
+Intellixa is designed to address these challenges by introducing **governed multi-agent workflows** with built-in validation and correction mechanisms.
 
 ---
 
-## 🎯 What AgentForge Provides
+## 🎯 What Intellixa Provides
 
 ### 🧩 Structured Multi-Agent Orchestration
-AgentForge coordinates multiple specialized agents in a deterministic pipeline, where each agent has a **single, well-defined responsibility**.
+Intellixa coordinates multiple specialized agents in a deterministic pipeline, where each agent has a **single, well-defined responsibility**.
 
 ### 🛡️ Quality Validation & Confidence Control
 Before delivering results, outputs are evaluated using:
@@ -64,7 +68,7 @@ Session-based memory enables agents to maintain context across workflow stages, 
 ```
 ## 🏗 Architecture Overview
 
-AgentForge is built using principles that prioritize clarity, scalability, and reliability:
+Intellixa is built using principles that prioritize clarity, scalability, and reliability:
 
 - Graph-based workflow orchestration using LangGraph  
 - Async-first backend design using asyncio  
@@ -89,10 +93,10 @@ AgentForge is built using principles that prioritize clarity, scalability, and r
 
 ## 📂 Project Structure & Setup
 
-AgentForge maintains a clear separation between backend orchestration logic and frontend user interaction.
+Intellixa maintains a clear separation between backend orchestration logic and frontend user interaction.
 
 ```
-AgentForge/
+Intellixa/
 ├── backend/    # Multi-agent orchestration, APIs, memory, LLM logic
 ├── frontend/   # User interface and client-side integration
 ├── .env_example #Store Secrets
@@ -170,7 +174,7 @@ Refer to:
 
 ## 📊 Project Metrics
 
-![Metrics](metrics.jpeg)
+![Metrics](metrics.png)
 
 - **5 specialized agents** orchestrated via LangGraph state machine
 - **4-6 LLM calls per workflow** (optimized from 12+ autonomous calls)

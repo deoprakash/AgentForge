@@ -69,7 +69,7 @@ const Footer = () => {
                     />
                   </svg>
                 </div>
-                <span className="text-lg font-bold text-white">AgentForge</span>
+                <span className="text-lg font-bold text-white">Intellixa</span>
               </div>
               <p className="text-sm text-gray-400">
                 Enterprise-grade multi-agent AI orchestration platform for reliable autonomous systems.
@@ -131,7 +131,7 @@ const Footer = () => {
             className="pt-8 border-t border-white/10"
           >
             <p className="text-sm text-gray-500 text-center">
-              © {currentYear} AgentForge. All rights reserved.
+              © {currentYear} Intellixa. All rights reserved.
             </p>
           </motion.div>
         </motion.div>

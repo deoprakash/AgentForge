@@ -223,7 +223,7 @@ function App() {
                 className="relative py-4"
               >
                 <h1 className="text-7xl md:text-8xl font-black bg-gradient-to-r from-primary-300 via-primary-500 to-primary-700 bg-clip-text text-transparent leading-tight">
-                  AgentForge
+                  Intellixa
                 </h1>
                 {/* Glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-primary-600/20 blur-3xl -z-10 opacity-50"></div>
