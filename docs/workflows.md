@@ -74,15 +74,27 @@ await self.memory.save_session(session_id, {"goal": goal, "email": email})
                        │ 2s delay
                        ▼
               ┌─────────────────┐
-              │ VALIDATION      │◀── Key 1 (index 0)
+              │ CONFIDENCE      │◀── Key 1 (index 0)
               │ Quality Check   │
               └────────┬────────┘
-                       │
+                       │ 2s delay
+                       ▼
+              ┌─────────────────┐
+              │ REVIEWER        │◀── Key 2 (index 1)
+              │ Fix Issues      │
+              └────────┬────────┘
+                       │ 2s delay
                        ▼
               ┌─────────────────┐
               │   END           │
               └─────────────────┘
 ```
+
+**Updated Workflow (v2.0):**
+- ✅ **5 agents** in pipeline
+- ✅ **Confidence validation** before reviewer
+- ✅ **Reviewer repair** for auto-fixing issues
+- ✅ **5 total API calls** (optimized from 12)
 
 ---
 
@@ -311,7 +323,8 @@ async def evaluate_and_store(self, goal: str, document: str, session_id: str, ke
       "confidence_score": 0-100,
       "confidence_reasoning": "...",
       "hallucination_risk": "low|medium|high",
-      "hallucination_reasoning": "..."
+      "hallucination_reasoning": "...",
+      "hallucination_issues": ["issue 1", "issue 2", ...]
     }
     """
     result = await self.think(prompt, purpose="validation", key_index=key_index)
@@ -332,27 +345,141 @@ async def evaluate_and_store(self, goal: str, document: str, session_id: str, ke
 - **Model**: llama-3.1-8b-instant
 - **Temperature**: 0.3 (lower for validation consistency)
 - **System Prompt**: "you are the confidence agent."
-- **Output**: JSON with quality metrics
+- **Output**: JSON with quality metrics + specific issues
 
 **Output State Update**:
 ```python
 {
   "confidence": {
-    "confidence_score": 85,
-    "confidence_reasoning": "Document aligns with goal, includes research-backed solutions, logical structure",
-    "hallucination_risk": "low",
-    "hallucination_reasoning": "All claims supported by research findings, no fabricated statistics"
+    "confidence_score": 75,
+    "confidence_reasoning": "Document aligns with goal, includes research-backed solutions",
+    "hallucination_risk": "medium",
+    "hallucination_reasoning": "Some claims need verification, cost estimates are approximate",
+    "hallucination_issues": [
+      "AGV cost estimate ($50K-100K) needs verification",
+      "Implementation timeline (6 months) not validated",
+      "ROI calculation based on assumed labor reduction"
+    ]
   }
 }
 ```
 
 **Console Output**:
 ```
-Confidence Score: 85%
-Hallucination Risk: low
+Confidence Score: 75%
+Hallucination Risk: medium
+Issues:
+  1. AGV cost estimate ($50K-100K) needs verification
+  2. Implementation timeline (6 months) not validated
+  3. ROI calculation based on assumed labor reduction
 ```
 
+**Triggers Reviewer?**
+- ✅ YES if confidence < 80% OR hallucination_issues detected
+- ✅ Reviewer will attempt to fix identified issues
+
 **API Call Count**: 1 (combined confidence+hallucination)
+
+---
+
+### Node 5: Reviewer (NEW in v2.0)
+
+**Timing**: 2s delay after Confidence  
+**API Key**: Key 2 (index 1)  
+**Purpose**: Autonomous repair of document issues identified by Confidence agent
+
+**Input State**:
+```python
+{
+  "session_id": "ses_a3f7b2c1",
+  "goal": "...",
+  "writer": "...",  # Original document
+  "confidence": {
+    "hallucination_issues": [
+      "AGV cost estimate needs verification",
+      "Implementation timeline not validated",
+      "ROI calculation needs supporting data"
+    ]
+  },
+  "reviewer": None  # ← To be populated
+}
+```
+
+**Execution**:
+```python
+# agents/reviewer.py
+async def repair(self, original_document: str, detected_issues: list, 
+                 user_revision_instruction: str, constraints: dict, key_index: int | None = None):
+    issues_text = "\n".join(f"- {issue}" for issue in detected_issues)
+    
+    prompt = f"""You are a Reviewer Agent responsible for refining documents.
+
+Your task:
+- Fix the issues identified below
+- Preserve correct parts of the original text
+- Do NOT introduce new assumptions or hallucinations
+- Maintain the same structure and format
+
+Original Document:
+{original_document}
+
+Issues to Fix:
+{issues_text}
+
+Output ONLY the revised document with fixes applied."""
+    
+    result = await self.think(prompt, purpose="generation", key_index=key_index)
+    return {"document": result, "status": "repaired"}
+```
+
+**LLM Call Details**:
+- **Model**: llama-3.1-8b-instant
+- **Temperature**: 0.5 (balanced for targeted repairs)
+- **System Prompt**: "you are the reviewer agent."
+- **Input**: Original document + specific issues to fix
+- **Output**: Revised document with targeted improvements
+
+**Repair Strategy**:
+1. **Identifies each issue** in the original text
+2. **Targets specific fixes** rather than full rewrite
+3. **Preserves quality content** from original
+4. **Adds caveats/disclaimers** for unverifiable claims
+5. **Maintains document structure** and flow
+
+**Output State Update**:
+```python
+{
+  "reviewer": {
+    "document": """
+    # Warehouse Optimization Proposal (REVISED)
+    
+    ## Executive Summary
+    This proposal outlines a comprehensive strategy to optimize warehouse operations...
+    
+    ## Cost Analysis
+    - AGV systems: $50K-100K per unit (market research indicates this range based on 2024 vendors)
+    - Implementation timeline: Estimated 6-9 months for full deployment
+    - ROI calculation: Based on estimated 30% labor reduction (subject to operational specifics)
+    
+    [Document revised with issue fixes...]
+    """,
+    "status": "repaired"
+  }
+}
+```
+
+**What Gets Fixed**:
+- ✅ Vague claims → Specific numbers with caveats
+- ✅ Unvalidated assumptions → Marked as estimates
+- ✅ Missing context → Added supporting details
+- ✅ Logical gaps → Filled with reasoning
+
+**Final Output**:
+- Uses **reviewer output** as final if available
+- Falls back to **writer output** if reviewer skipped
+- State: `"final": final_state.get("reviewer") or final_state.get("writer")`
+
+**API Call Count**: 1
 
 ---
 
@@ -362,8 +489,9 @@ Hallucination Risk: low
 ```python
 # agents/automation.py
 if email and allow_email_sending:
+    final_doc = final_state.get("reviewer") or final_state.get("writer")
     email_body = f"""
-    {writer_output}
+    {final_doc}
     
     ---
     Quality Metrics:

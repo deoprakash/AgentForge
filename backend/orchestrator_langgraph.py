@@ -11,6 +11,7 @@ from agents.writer import WriterAgent
 from agents.developer import DeveloperAgent
 from agents.automation import AutomationAgent
 from agents.confidence import ConfidenceAgent
+from agents.reviewer import ReviewerAgent
 from utils import format_email_content
 
 
@@ -23,6 +24,7 @@ class PipelineState(TypedDict, total=False):
     developer: Dict[str, Any]
     writer: Dict[str, Any]
     confidence: Dict[str, Any]
+    reviewer: Dict[str, Any]
 
 
 class LangGraphOrchestrator:
@@ -41,6 +43,7 @@ class LangGraphOrchestrator:
         self.developer = DeveloperAgent("Developer", memory)
         self.automation = AutomationAgent("Automation", memory)
         self.confidence = ConfidenceAgent("Confidence", memory)
+        self.reviewer = ReviewerAgent("Reviewer", memory)
         # Build graph once
         self.app = self._build_graph()
 
@@ -107,17 +110,38 @@ class LangGraphOrchestrator:
             doc = await self.writer.write_document(brief, key_index=2)
             await self.memory.save_document(state["session_id"], doc)
             return {"writer": doc}
+
+        async def node_reviewer(state: PipelineState) -> PipelineState:
+            """Reviewer node to fix issues identified by confidence agent."""
+            await asyncio.sleep(2)
+            doc_content = ((state.get("writer") or {}).get("document", ""))
+            conf = state.get("confidence") or {}
+            issues = conf.get("hallucination_issues") or []
+            
+            # Use API key 2 (index 1)
+            revised_doc = await self.reviewer.repair(
+                original_document=doc_content,
+                detected_issues=issues,
+                user_revision_instruction="Fix the identified issues",
+                constraints=None,
+                key_index=1
+            )
+            await self.memory.save_document(state["session_id"], revised_doc)
+            return {"reviewer": revised_doc, "writer": revised_doc}
+
         # Register nodes
         graph.add_node("ceo_and_research", node_ceo_and_research)
         graph.add_node("developer", node_developer)
         graph.add_node("writer", node_writer)
         graph.add_node("validation", node_validation)
+        graph.add_node("reviewer", node_reviewer)
 
         # Linear handoff
         graph.add_edge("ceo_and_research", "developer")
         graph.add_edge("developer", "writer")
         graph.add_edge("writer", "validation")
-        graph.add_edge("validation", END)
+        graph.add_edge("validation", "reviewer")
+        graph.add_edge("reviewer", END)
 
         graph.set_entry_point("ceo_and_research")
         return graph.compile()
@@ -186,8 +210,9 @@ class LangGraphOrchestrator:
                 "research": final_state.get("research"),
                 "developer": final_state.get("developer"),
                 "writer": final_state.get("writer"),
+                "reviewer": final_state.get("reviewer"),
             },
-            "final": final_state.get("writer"),
+            "final": final_state.get("reviewer") or final_state.get("writer"),
             "email": {
                 "requested": bool(email_target),
                 "to": email_target,

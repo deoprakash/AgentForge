@@ -11,28 +11,34 @@ AgentForge is built on a **graph-based, stateful orchestration architecture** us
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    FastAPI REST Server                      │
-│                      (server.py)                            │
+│                  (backend/server.py)                        │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            LangGraph Orchestrator                           │
-│          (orchestrator_langgraph.py)                        │
+│        (backend/orchestrator_langgraph.py)                  │
 │                                                             │
-│  ┌──────────┐    ┌──────────┐   ┌──────────┐    ┌──────────┐│
-│  │CEO+      │──▶│Developer │──▶│Writer    │──▶│Validation││
-│  │Research  │    │(Key 2)   │   │(Key 3)   │    │(Key 1)   ││
-│  │(Key 1)   │    │          │   │          │    │          ││
-│  └──────────┘    └──────────┘   └──────────┘    └──────────┘│
-│       │              │              │              │        │
-│       └──────────────┴──────────────┴──────────────┘        │
-│                        │                                    │
-└────────────────────────┼────────────────────────────────────┘
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   ││
+│  │CEO+      │─▶│Developer │─▶│Writer    │─▶│Confidence│  ││
+│  │Research  │  │(Key 2)   │  │(Key 3)   │  │(Key 1)   │  ││
+│  │(Key 1)   │  │          │  │          │  │          │  ││
+│  └──────────┘  └──────────┘  └──────────┘  └────┬─────┘  ││
+│                                                  │         │
+│                                            ┌─────▼─────┐   │
+│                                            │ Reviewer  │   │
+│                                            │ (Key 2)   │   │
+│                                            └─────┬─────┘   │
+│                                                  │         │
+│                                            ┌─────▼─────┐   │
+│                                            │    END    │   │
+│                                            └───────────┘   │
+└─────────────────────────────────────────────────────────────┘
                          │
                          ▼
               ┌──────────────────────┐
               │   Memory Layer       │
-              │   (memory.py)        │
+              │   (backend/memory.py)│
               │   MongoDB + Motor    │
               └──────────────────────┘
                          │
@@ -41,9 +47,24 @@ AgentForge is built on a **graph-based, stateful orchestration architecture** us
          ┌──────────┐      ┌──────────┐
          │Sessions  │      │Plans     │
          │Research  │      │Documents │
-         │Actions   │      │          │
+         │Actions   │      │Confidence│
          └──────────┘      └──────────┘
 ```
+
+## Updated Workflow (v2.0)
+
+**Complete Pipeline:**
+```
+CEO+Research → Developer → Writer → Confidence → Reviewer → END
+   (Key 1)      (Key 2)    (Key 3)    (Key 1)    (Key 2)
+```
+
+### Key Features of v2.0:
+- ✅ **Reviewer Agent Added**: Automatically repairs documents when confidence issues detected
+- ✅ **Quality Validation**: Confidence agent evaluates before reviewer
+- ✅ **API Key Distribution**: Load balanced across 3 keys
+- ✅ **State Persistence**: All outputs saved to MongoDB
+- ✅ **Error Recovery**: Reviewer can iterate until issues resolved
 
 ---
 
@@ -126,18 +147,70 @@ class BaseAgent:
 
 # Strategy: rotation (round-robin across all keys)
 GROQ_KEY_STRATEGY=rotation
-GROQ_MIN_INTERVAL_SECONDS=0.4  # Global pacing
-```
-
-**SSL Certificate Handling**:
-```python
-async with httpx.AsyncClient(timeout=30, verify=certifi.where()) as client:
-    response = await client.post(url, headers=headers, json=body)
-```
+### 4. **Confidence Agent** (`agents/confidence.py`)
+- **Role**: Quality validation & hallucination detection
+- **Key Index**: 0 (Key 1)
+- **Input**: Writer's document
+- **Output**: Confidence metrics and issue detection
+- **Integration**: Runs after Writer, before Reviewer
 
 ---
 
-### 5. **Memory Layer** (`memory.py`)
+### 5. **Reviewer Agent** (`agents/reviewer.py`)
+- **Role**: Autonomous issue repair & document refinement
+- **Key Index**: 1 (Key 2)
+- **Input**: Document + detected issues from Confidence agent
+- **Output**: Revised document with fixes applied
+- **Logic**: Reads hallucination issues, targets repairs
+- **Integration**: Runs after Confidence check, returns to END
+
+---
+
+### 6. **Automation Agent** (`agents/automation.py`)
+- **Role**: Email delivery
+- **Key Index**: None (no LLM calls)
+- **Input**: Email target, subject, body
+- **Output**: Email send confirmation
+- **Tool**: `tools/gmail_tool.py` (SMTP)
+
+---
+
+## Agent Pipeline States
+
+### State Transitions with 2-Second Delays:
+```
+START → CEO+Research (0s) 
+      → [2s delay] → Developer 
+      → [2s delay] → Writer 
+      → [2s delay] → Confidence 
+      → [2s delay] → Reviewer 
+      → END
+```
+
+**Why Delays?**
+- Prevents rapid successive API calls
+- Simulates logical processing time
+- Reduces 429 rate limit errors
+- Improves user experience (shows progress)
+
+---
+
+## API Key Distribution
+
+| Agent | API Key | Calls/Report |
+|-------|---------|--------------|
+| CEO+Research | Key 1 (GROQ_API_KEY) | 1 (combined) |
+| Developer | Key 2 (GROQ_API_KEY_2) | 1 |
+| Writer | Key 3 (GROQ_API_KEY_3) | 1 |
+| Confidence | Key 1 (GROQ_API_KEY) | 1 (combined) |
+| Reviewer | Key 2 (GROQ_API_KEY_2) | 1 |
+| **Total** | | **5 calls** |
+
+**Load Balancing:**
+- Key 1: CEO+Research, Confidence (2 calls)
+- Key 2: Developer, Reviewer (2 calls)
+- Key 3: Writer (1 call)
+- **Ratio**: 2:2:1 distribution for optimal rate limit handling
 
 **MongoDB Collections**:
 - `sessions`: User requests and metadata

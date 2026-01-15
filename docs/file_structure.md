@@ -4,57 +4,64 @@
 
 ```
 AgenticAI/
-├── config.py                     # Environment configuration loader
-├── llm_client.py                 # Unified LLM API client
-├── memory.py                     # MongoDB async persistence layer
-├── orchestrator_langgraph.py     # LangGraph-based pipeline orchestrator
-├── server.py                     # FastAPI REST API server
-├── test.py                       # Testing/debugging utilities
-├── utils.py                      # Shared utilities (parsing, serialization)
-├── pyproject.toml                # Poetry project metadata
-├── requirements.txt              # Pip dependencies (generated from Poetry)
-├── README.md                     # Project documentation
-├── .env                          # Environment variables (not in repo)
-├── .gitignore                    # Git ignore rules
+├── backend/                      # Backend application (all Python code)
+│   ├── __init__.py              # Backend module initialization
+│   ├── config.py                # Environment configuration loader
+│   ├── llm_client.py            # Unified LLM API client
+│   ├── memory.py                # MongoDB async persistence layer
+│   ├── orchestrator_langgraph.py # LangGraph-based pipeline orchestrator
+│   ├── orchestrator.py          # Legacy orchestrator (legacy fallback)
+│   ├── server.py                # FastAPI REST API server
+│   ├── utils.py                 # Shared utilities (parsing, serialization)
+│   ├── pyproject.toml           # Poetry project metadata
+│   ├── requirements.txt         # Pip dependencies
+│   │
+│   ├── agents/                  # Agent implementations
+│   │   ├── __init__.py         # Agent module exports
+│   │   ├── base.py             # BaseAgent abstract class
+│   │   ├── ceo.py              # CEO agent (planning + research)
+│   │   ├── research.py         # Research agent (market intelligence)
+│   │   ├── developer.py        # Developer agent (technical artifacts)
+│   │   ├── writer.py           # Writer agent (document generation)
+│   │   ├── confidence.py       # Confidence agent (quality validation)
+│   │   ├── reviewer.py         # Reviewer agent (issue repair)
+│   │   ├── automation.py       # Automation agent (email delivery)
+│   │   └── __pycache__/        # Python bytecode cache
+│   │
+│   ├── tools/                   # External tool integrations
+│   │   ├── __init__.py         # Tool module exports
+│   │   ├── search_tool.py      # Web search via SerpAPI (unused)
+│   │   ├── gmail_tool.py       # Gmail SMTP client
+│   │   ├── calendar_tool.py    # Google Calendar API (unused)
+│   │   ├── file_tool.py        # File system operations (unused)
+│   │   └── __pycache__/        # Python bytecode cache
+│   │
+│   └── outputs/                 # Generated artifacts (gitignored)
+│       └── diagram.mmd         # Example Mermaid diagram output
 │
-├── agents/                       # Agent implementations
-│   ├── __init__.py              # Agent module exports
-│   ├── base.py                  # BaseAgent abstract class
-│   ├── ceo.py                   # CEO agent (planning + research)
-│   ├── developer.py             # Developer agent (technical artifacts)
-│   ├── writer.py                # Writer agent (document generation)
-│   ├── confidence.py            # Confidence agent (quality validation)
-│   ├── automation.py            # Automation agent (email delivery)
-│   └── __pycache__/             # Python bytecode cache
+├── docs/                        # Project documentation
+│   ├── architecture.md         # System design and components
+│   ├── workflows.md            # Execution flow diagrams
+│   ├── file_structure.md       # This file
+│   ├── tech_stack.md           # Technology dependencies
+│   ├── troubleshooting.md      # Common issues and solutions
+│   └── api_reference.md        # REST API documentation
 │
-├── tools/                        # External tool integrations
-│   ├── __init__.py              # Tool module exports
-│   ├── search_tool.py           # Web search via SerpAPI (unused)
-│   ├── gmail_tool.py            # Gmail SMTP client
-│   ├── calendar_tool.py         # Google Calendar API (unused)
-│   ├── file_tool.py             # File system operations (unused)
-│   └── __pycache__/             # Python bytecode cache
-│
-├── outputs/                      # Generated artifacts (gitignored)
-│   └── diagram.mmd              # Example Mermaid diagram output
-│
-├── docs/                         # Project documentation
-│   ├── architecture.md          # System design and components
-│   ├── workflows.md             # Execution flow diagrams
-│   ├── file_structure.md        # This file
-│   ├── tech_stack.md            # Technology dependencies
-│   ├── troubleshooting.md       # Common issues and solutions
-│   └── api_reference.md         # REST API documentation
-│
-└── __pycache__/                  # Python bytecode cache
+├── .env                         # Environment variables (not in repo)
+├── .gitignore                   # Git ignore rules
+├── .git/                        # Git repository
+├── .venv/                       # Python virtual environment
+├── README.md                    # Project documentation
+└── LICENSE                      # License file
 ```
 
 ---
 
 ## Core Files
 
-### `config.py`
+### `backend/config.py`
 **Purpose**: Centralized configuration management  
+**Location**: `backend/config.py`  
 **Dependencies**: `python-dotenv`, `os`  
 **Key Exports**:
 - `GROQ_API_KEY`, `GROQ_API_KEY_2`, `GROQ_API_KEY_3`
@@ -80,8 +87,9 @@ if USE_LANGGRAPH:
 
 ---
 
-### `llm_client.py`
+### `backend/llm_client.py`
 **Purpose**: Unified interface for LLM API calls  
+**Location**: `backend/llm_client.py`  
 **Dependencies**: `httpx`, `certifi`, `config`  
 **Key Functions**:
 
